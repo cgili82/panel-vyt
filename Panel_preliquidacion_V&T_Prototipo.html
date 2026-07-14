@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de Preliquidación — Vinatea & Toyama</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+:root{
+  --navy:#042C53;--blue:#185FA5;--blue2:#378ADD;--blue-soft:#E6F1FB;
+  --green:#3B6D11;--green2:#1D9E75;--green-soft:#EAF3DE;
+  --amber:#854F0B;--amber2:#EF9F27;--amber-soft:#FAEEDA;
+  --red:#A32D2D;--red2:#D85A30;--red-soft:#FCEBEB;
+  --teal:#085041;--teal-soft:#E1F5EE;--purple:#3C3489;--purple-soft:#EEEDFE;
+  --bg:#F8F7F4;--panel:#fff;--line:#D3D1C7;--line2:#E8E6DE;--muted:#888780;--text:#2C2C2A;
+  --shadow:0 12px 36px rgba(4,44,83,.12)
+}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.45}
+button,input,select{font:inherit}button{cursor:pointer}
+/* HEADER */
+.app-header{height:54px;background:var(--navy);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.brand{display:flex;align-items:center;gap:11px}.brand-badge{background:var(--blue);padding:4px 9px;border-radius:5px;font-size:11px;font-weight:700}.brand-title{font-weight:600;font-size:14px}
+.header-right{display:flex;align-items:center;gap:10px}.hpill{padding:4px 10px;border-radius:14px;background:rgba(255,255,255,.13);font-size:11px}.hpill.period{background:var(--blue);font-weight:700}.hpill.usr{cursor:pointer}.hpill.usr:hover{background:rgba(255,255,255,.22)}
+/* TOOLBAR */
+.toolbar{background:#fff;border-bottom:1px solid var(--line);padding:9px 24px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;position:sticky;top:54px;z-index:90}
+.spacer{flex:1}
+.portal-date{display:flex;align-items:center;gap:7px;padding:5px 9px;border:1px solid #B6D4EF;border-radius:7px;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:700}
+.portal-date input{border:0;background:transparent;color:var(--blue);outline:none;font-weight:700}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;color:var(--text);display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px}
+.btn:hover{background:#F5F7F9}.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.btn.green{background:var(--green);border-color:var(--green);color:#fff}.btn.blue-out{border-color:var(--blue);color:var(--blue)}.btn.blue-out:hover{background:var(--blue-soft)}.btn.blue-out.tb-admin{border-color:var(--amber2);color:var(--amber);background:var(--amber-soft)}.btn.blue-out.tb-admin:hover{background:var(--amberl,#FAEEDA)}
+/* SETUP BANNER */
+.setup-banner{background:#FFF9E6;border-bottom:2px solid var(--amber);padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.setup-banner.hidden{display:none}
+.setup-txt{font-size:12px;color:var(--amber);flex:1}
+.setup-inp{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 10px;border:1px solid var(--amber);border-radius:6px;width:340px;outline:none}
+/* LOADING */
+.lol{position:fixed;inset:0;background:rgba(4,44,83,.5);z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.lol.show{display:flex}.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top:3px solid #fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{color:#fff;font-size:13px;font-weight:500}
+/* MAIN */
+.main{padding:14px 20px 72px;max-width:none;margin:auto}
+.info-strip{background:#EFF7FD;border:1px solid #B6D4EF;border-radius:10px;padding:9px 12px;margin-bottom:12px;display:flex;gap:8px;color:#33566f;font-size:11px}
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:13px}
+.kpi-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:flex-start;gap:7px}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:500;margin-top:6px;white-space:nowrap}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.kpi-green .kpi-value{color:#296700}.kpi-amber .kpi-value{color:#9A5B00}.kpi-blue .kpi-value{color:#155DA0}.kpi-teal .kpi-value{color:#006451}.kpi-red .kpi-value{color:var(--red)}.kpi-navy .kpi-value{color:var(--navy)}
+.date-filter{border:0;background:none;color:var(--blue);font-size:9px;padding:0;white-space:nowrap;cursor:pointer}
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:10px;margin-bottom:13px}
+.chart-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;overflow:hidden}
+.chart-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:10px}
+.bar-row{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(50px,.9fr) 80px;align-items:center;gap:7px;margin:7px 0}
+.bar-name{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-track{height:5px;background:#ECEAE4;border-radius:4px;overflow:hidden}.bar-fill{height:100%;background:var(--blue2);border-radius:4px}.bar-value{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#444}
+.donut-layout{display:grid;grid-template-columns:minmax(110px,140px) minmax(0,1fr);gap:10px;align-items:center}
+.donut{width:min(140px,100%);aspect-ratio:1;border-radius:50%;position:relative;background:#ddd}
+.donut:after{content:"";position:absolute;inset:29%;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.02)}
+.donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1;pointer-events:none}
+.donut-center strong{font-family:'IBM Plex Mono',monospace;font-size:11px}.donut-center span{font-size:8px;color:var(--muted);text-transform:uppercase}
+.legend{display:grid;gap:5px}.legend-item{display:grid;grid-template-columns:10px minmax(0,1fr);column-gap:5px;align-items:start}
+.legend-swatch{width:10px;height:10px;border-radius:2px;margin-top:2px}.legend-name{font-size:9px;color:#555}.legend-amount{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;color:var(--text);grid-column:2}.legend-pct{font-size:8px;color:var(--muted);margin-left:4px}
+.chart-empty{padding:28px;text-align:center;color:var(--muted);font-size:11px}
+/* FILTERS */
+.filter-bar{background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.search{position:relative;min-width:260px;flex:1.5;max-width:440px}
+.search input{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 10px 7px 30px;outline:none;font-size:12px}
+.search input:focus{border-color:var(--blue2)}.search span{position:absolute;left:9px;top:8px;color:var(--muted)}
+.multi{position:relative}
+.multi-button{min-width:120px;justify-content:space-between;font-size:11px;padding:6px 9px}
+.multi-button.active{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+.count-badge{background:var(--blue);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px}
+.multi-menu{display:none;position:absolute;top:38px;left:0;width:240px;max-height:300px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px;box-shadow:var(--shadow);z-index:80}
+.multi-menu.open{display:block}.multi-head{font-size:9px;text-transform:uppercase;color:var(--muted);font-weight:700;padding:4px 7px 7px;border-bottom:1px solid var(--line2);margin-bottom:4px}
+.multi-option{display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:6px;font-size:11px}.multi-option:hover{background:#F3F7FA}.multi-option input{accent-color:var(--blue)}
+/* TABLE */
+.table-card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:auto;box-shadow:0 4px 18px rgba(4,44,83,.05);max-height:calc(100vh - 210px)}
+table.main-table{border-collapse:separate;border-spacing:0;width:100%;min-width:1380px;table-layout:fixed;font-size:10px}
+col.c-hier{width:18%}col.c-per{width:4.5%}col.c-hprod{width:4.5%}col.c-hfact{width:5%}col.c-tb{width:6.5%}col.c-fact{width:7%}col.c-state{width:9%}col.c-resp{width:6.5%}col.c-proj{width:6%}col.c-inv{width:7.5%}col.c-class{width:6%}col.c-com{width:7%}
+thead th{position:sticky;top:0;z-index:10;background:var(--navy);color:#fff;font-size:9px;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:8px 8px;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap}
+thead th.num{text-align:right}thead th.ctr{text-align:center}
+tbody td{padding:6px 8px;border-bottom:1px solid var(--line2);vertical-align:middle;background:#fff;overflow:hidden}
+tbody tr:hover td{filter:brightness(.985)}
+tfoot td{position:sticky;bottom:0;background:var(--navy);color:#fff;padding:8px 8px;font-weight:700;z-index:9;font-size:10px;border-right:1px solid rgba(255,255,255,.1)}
+.num{text-align:right}.ctr{text-align:center}
+.mono{font-family:'IBM Plex Mono',monospace}
+/* Row levels */
+.row-client td{background:#F3F8FC!important}.row-form td{background:#F9FBFD!important}.row-area td{background:#FCFDFB!important}.row-matter td{background:#fff!important}
+/* Hierarchy */
+.hcell{display:flex;align-items:center;gap:7px;min-width:0}
+.ind1{padding-left:24px}.ind2{padding-left:48px}.ind3{padding-left:72px}
+.xbtn{width:22px;height:22px;min-width:22px;border-radius:5px;border:1px solid #9FC4E3;background:#fff;color:var(--blue);font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.xbtn.open{background:var(--blue);color:#fff}
+.lbl-wrap{min-width:0}.main-lbl{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}.sub-lbl{font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.chip{display:inline-block;padding:1px 5px;border-radius:9px;font-size:8px;font-weight:700;margin-left:5px;vertical-align:1px;background:var(--blue-soft);color:var(--blue)}
+.chip.form{background:var(--purple-soft);color:var(--purple)}.chip.area{background:var(--green-soft);color:var(--green)}.chip.new{background:var(--amber-soft);color:var(--amber)}
+/* Editable fields */
+.ed{width:100%;border:1px solid var(--line);border-radius:5px;padding:4px 5px;background:#fff;outline:none;font-size:9px}
+.ed:focus{border-color:var(--blue2);box-shadow:0 0 0 2px rgba(55,138,221,.12)}
+.ed.amt{font-family:'IBM Plex Mono',monospace;text-align:right;border-color:#A9D4BE;background:#F5FCF8}.ed.pen-amt{border-color:var(--amber2)!important;background:#FFF9ED!important;color:var(--amber)!important}
+.ed.hrs{font-family:'IBM Plex Mono',monospace;text-align:right;border-color:#B6D4EF;background:#F7FBFE}
+.ed.hrs.chg{border-color:var(--amber2);background:#FFF9ED}
+.ed.inv{font-family:'IBM Plex Mono',monospace;background:#F7FBFE;border-color:#B6D4EF;text-transform:uppercase;font-size:8.5px}
+.ed.cmt{font-size:8.5px;background:#FFFDF8;border-color:#DDD6C6}
+.static{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500}
+.ref-note{font-size:7px;color:#8A6A20;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85}
+.amt-wrap{display:flex;flex-direction:column;gap:1px}
+.muted-txt{font-size:9px;color:var(--muted)}
+/* State/projection */
+.badge{display:inline-block;padding:2px 6px;border-radius:10px;font-size:8px;font-weight:700;white-space:nowrap}
+.bdg-cur{background:var(--green-soft);color:var(--green)}.bdg-old{background:var(--red-soft);color:var(--red)}.bdg-mix{background:var(--amber-soft);color:var(--amber)}
+.pj-yes{color:var(--green);font-weight:700;font-size:9px}.pj-no{color:var(--red);font-weight:700;font-size:9px}.pj-mix{color:var(--amber);font-weight:700;font-size:9px}
+.pj-auto{font-size:8px;color:var(--teal);font-weight:700;line-height:1.2;display:inline-block}
+.moneda-wrap{display:flex;align-items:center;gap:3px}
+.moneda-sel{border:1px solid var(--line);border-radius:4px;padding:2px 3px;font-size:8px;background:#fff;font-weight:700;width:46px}
+.moneda-sel.pen{border-color:var(--amber2);background:var(--amberl,#FAEEDA);color:var(--amber)}
+.moneda-sel.usd{border-color:#A9D4BE;background:#F5FCF8;color:var(--green)}
+.tc-inp{width:48px;border:1px solid var(--amber2);border-radius:4px;padding:2px 3px;font-size:7.5px;background:#FFF9ED;display:none;font-family:monospace}
+.tc-inp.show{display:inline-block}
+.fecha-fac{width:100%;border:1px solid #A9D4BE;border-radius:4px;padding:2px 4px;background:#F5FCF8;font-size:8px;display:none}
+.fecha-fac.show{display:block}
+.fecha-fac-dis{font-size:8px;color:var(--muted)}
+.pj-pending{display:inline-flex;align-items:center;gap:4px;font-size:8px;font-weight:700;color:var(--amber)}
+.pj-dot{width:8px;height:8px;border-radius:50%;background:var(--amber2);flex-shrink:0;animation:semaforo 1.6s ease-in-out infinite}
+@keyframes semaforo{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.75)}}
+.inv-pend{font-size:8px;color:var(--amber);font-weight:700}
+.cmt-sum{font-size:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.empty{padding:32px;text-align:center;color:var(--muted)}
+/* Footer */
+.footer{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:95}
+.finfo{font-size:11px;color:var(--muted)}.factions{display:flex;gap:8px;align-items:center}
+.dirty{display:none;background:var(--amber-soft);color:var(--amber);padding:4px 9px;border-radius:5px;font-size:10px;font-weight:700}.dirty.show{display:inline-block}
+/* Toast */
+.toast{position:fixed;right:24px;bottom:66px;background:var(--navy);color:#fff;padding:9px 14px;border-radius:8px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;z-index:250}.toast.show{opacity:1;transform:none}
+/* Overlay/Modal */
+.ov{position:fixed;inset:0;background:rgba(4,44,83,.48);display:none;align-items:center;justify-content:center;padding:18px;z-index:200}.ov.open{display:flex}
+.modal{width:640px;max-width:100%;max-height:92vh;overflow:auto;background:#fff;border-radius:12px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.25)}
+.modal h2{margin:0;color:var(--navy);font-size:16px}.modal-sub{font-size:11px;color:var(--muted);margin:4px 0 14px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ff{display:flex;flex-direction:column;gap:3px}.ff.full{grid-column:1/-1}
+.flbl{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+.fi{border:1px solid var(--line);border-radius:6px;padding:7px 9px;outline:none;font-size:12px}
+.fi:focus{border-color:var(--blue2)}.fi[readonly]{background:#F5F5F2;color:#666}.fi:disabled{background:#F5F5F2;color:#666;cursor:not-allowed}.fi.inv-cls{border-color:var(--red)!important;background:var(--red-soft)!important}
+.vld{font-size:9px;min-height:13px}.vld.ok{color:var(--green)}.vld.err{color:var(--red)}.vld.info{color:var(--amber)}
+.auto-note{background:var(--green-soft);color:var(--green);padding:7px 10px;border-radius:7px;font-size:10px}
+.mfoot{border-top:1px solid var(--line2);margin-top:14px;padding-top:11px;display:flex;justify-content:flex-end;gap:8px}
+/* Collab pill */
+.collab-pill{background:var(--green-soft);color:var(--green);padding:3px 9px;border-radius:10px;font-size:10px;font-weight:700;display:none}
+.collab-pill.show{display:inline-block}
+/* Responsive */
+@media(max-width:1350px){
+  col.c-hier{width:18%}
+  .main-table{min-width:1180px}
+  thead th{padding:6px 4px;font-size:8px}
+  tbody td{padding:5px 4px}
+  .ind1{padding-left:16px}.ind2{padding-left:32px}.ind3{padding-left:48px}
+  .ed{font-size:8px;padding:3px 3px}
+}
+@media(max-width:1100px){
+  .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .charts-row{grid-template-columns:1fr 1fr}
+}
+@media(max-width:800px){
+  .kpi-grid,.charts-row{grid-template-columns:1fr}
+  .toolbar{position:static}
+}
+</style>
+</head>
+<body>
+
+<div class="lol" id="lol"><div class="spinner"></div><div class="ltxt" id="ltxt">Cargando…</div></div>
+
+<header class="app-header">
+  <div class="brand"><span class="brand-badge">V&T</span><span class="brand-title">Panel de Preliquidación</span></div>
+  <div class="header-right">
+    <span class="collab-pill" id="collabPill">● OneDrive · TB + Ops</span>
+    <span class="hpill period" id="hPeriod">—</span>
+    <span class="hpill usr" id="hUser" onclick="promptUser(false)" title="Click para cambiar usuario">👤 —</span>
+  </div>
+</header>
+
+<div class="setup-banner hidden" id="setupBanner" style="flex-wrap:wrap;gap:7px;align-items:center">
+  <span>☁️</span>
+  <span class="setup-txt" style="flex:none;font-size:11px"><strong>Conectar a OneDrive:</strong></span>
+  <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:260px">
+    <span style="font-size:10px;font-weight:700;color:var(--amber);white-space:nowrap">📊 TB:</span>
+    <input class="setup-inp" id="urlTB" placeholder="Link carpeta TB/Preliquidacion_TB.xlsx?download=1" type="url" style="flex:1;border-color:var(--amber2)">
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:260px">
+    <span style="font-size:10px;font-weight:700;color:var(--green);white-space:nowrap">✏️ Ops:</span>
+    <input class="setup-inp" id="urlOps" placeholder="Link carpeta Ops/Preliquidacion_Ops.xlsx?download=1" type="url" style="flex:1;border-color:var(--green2,#1D9E75)">
+  </div>
+  <button class="btn primary" onclick="connectSheet()">✓ Conectar y cargar base</button>
+  <button class="btn" onclick="testLinks()" title="Verificar que los links funcionen">🔍 Probar links</button>
+  <button class="btn" onclick="$('setupBanner').classList.add('hidden')" style="margin-left:2px">✕</button>
+</div>
+
+<div class="toolbar">
+  <label class="portal-date" title="Fecha de referencia para calcular la clasificación corriente/no corriente">📅 Fecha portal <input type="date" id="portalDate" value=""></label>
+  <button class="btn blue-out" onclick="openTBModal()" title="Acción del responsable del mes: actualiza la base de todo el equipo">📥 Cargar base TB <span style="font-size:9px;background:#EF9F27;color:#fff;border-radius:4px;padding:1px 5px;margin-left:3px;font-weight:700">MES</span></button>
+  <input type="file" id="fInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="loadFile(event)">
+  <span id="fName" style="font-size:11px;color:var(--muted);display:none;"></span>
+  <div class="spacer"></div>
+  <button class="btn green" onclick="openNewMatter()">＋ Agregar encargo</button>
+  <button class="btn" onclick="exportXLS()">⬇ Exportar Excel</button>
+</div>
+
+<main class="main">
+  <div class="info-strip">
+    <span>💡</span>
+    <span>
+      <strong>Clasificación automática:</strong> según Fecha portal vs. período de producción TB (1-60 días = Corriente, 61+ = No corriente).
+      <strong>Horas Facturables:</strong> editables por área y asunto para distribuir el monto proporcionalmente.
+      <strong>Facturado:</strong> al marcar este estado, el asunto sale de proyección y se habilita el N° de factura.
+      <strong>CASTIGADO / ASOCIADO:</strong> no suman a la proyección ni al total.
+    </span>
+  </div>
+  <section class="kpi-grid" id="kpis"></section>
+  <section class="charts-row">
+    <div class="chart-card"><div class="chart-title">Monto por socio (USD)</div><div id="socioChart"></div></div>
+    <div class="chart-card"><div class="chart-title">Por área</div><div id="areaChart"></div></div>
+    <div class="chart-card"><div class="chart-title">Por forma de liquidación</div><div id="formaChart"></div></div>
+    <div class="chart-card"><div class="chart-title">Antigüedad (proyectado)</div><div id="ageChart"></div></div>
+  </section>
+  <section class="filter-bar">
+    <div class="search"><span>⌕</span><input id="globalSearch" autocomplete="off" placeholder="Buscar cliente, asunto, socio, área, estado, factura o comentario…"></div>
+    <div class="multi" id="mPer"></div>
+    <div class="multi" id="mSoc"></div>
+    <div class="multi" id="mAre"></div>
+    <div class="multi" id="mFor"></div>
+    <div class="multi" id="mEst"></div>
+    <button class="btn" onclick="clearFilters()">Limpiar filtros</button>
+  </section>
+  <section class="table-card">
+    <table class="main-table">
+      <colgroup>
+        <col class="c-hier"><col class="c-per"><col class="c-hprod"><col class="c-hfact">
+        <col class="c-tb"><col class="c-fact"><col style="width:7%"><col class="c-state"><col class="c-resp">
+        <col class="c-proj"><col class="c-inv"><col style="width:6%"><col class="c-class"><col class="c-com">
+      </colgroup>
+      <thead><tr>
+        <th>Cliente / Forma / Área / Asunto</th>
+        <th class="ctr">Período</th>
+        <th class="num" title="Horas originales de TB — solo lectura">Hs. Prod.</th>
+        <th class="num" title="Horas facturables — editables para distribuir el monto">Hs. Fact.</th>
+        <th class="num">Monto TB</th>
+        <th class="num">Monto a facturar</th>
+        <th class="ctr" title="Moneda (USD/PEN) y tipo de cambio si aplica">Moneda</th>
+        <th>Estado</th>
+        <th>Responsable</th>
+        <th class="ctr">Proyección</th>
+        <th>N° Factura</th>
+        <th class="ctr" title="Fecha en que se emitió la factura — se habilita al marcar FACTURADO">Fecha Fact.</th>
+        <th class="ctr">Clasificación</th>
+        <th>Comentario</th>
+      </tr></thead>
+      <tbody id="tBody"></tbody>
+      <tfoot id="tFoot"></tfoot>
+    </table>
+  </section>
+</main>
+
+<footer class="footer">
+  <div style="display:flex;align-items:center;gap:12px">
+  <div class="finfo" id="fInfo"></div>
+  <div id="syncStatus" style="font-size:10px;color:var(--muted);display:none">🔄 Sync: <span id="syncTime">—</span></div>
+</div>
+  <div class="factions">
+    <span class="dirty" id="dirty">Cambios sin guardar</span>
+    <button class="btn" onclick="resetData()">Restablecer</button>
+    <button class="btn primary" onclick="saveChanges()">💾 Guardar cambios</button>
+  </div>
+</footer>
+
+<!-- MODAL ENCARGO -->
+
+<!-- MODAL CONFIRMACIÓN CARGA TB -->
+<div class="ov" id="ovTBConfirm">
+  <div class="modal" style="width:520px">
+    <h2>📥 Cargar nueva base de Time Billing</h2>
+    <div class="modal-sub">Esta acción actualiza la base de <strong>todo el equipo</strong>, no solo tu vista local.</div>
+
+    <div style="background:#EFF7FD;border:1px solid #B6D4EF;border-radius:9px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#185FA5;margin-bottom:6px">¿Quién debe hacer esta acción?</div>
+      <div style="font-size:11px;color:#2C2C2A;line-height:1.6">
+        El <strong>responsable del mes</strong> (quien descargó el WIP de Time Billing). Al cargar el archivo aquí, la base se actualizará en tu panel. Luego debes subirla a OneDrive para que <strong>Fabrissio, Cristina, Katherine, Mayte y Andrea</strong> también la vean.
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#F8F7F4;border-radius:8px;border-left:3px solid #185FA5">
+        <span style="font-size:16px;flex-shrink:0">①</span>
+        <div style="font-size:11px;line-height:1.5"><strong>Selecciona el export de TB</strong> que descargaste de Time Billing este mes. El panel detecta las columnas automáticamente y normaliza áreas, formas y socios.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#F8F7F4;border-radius:8px;border-left:3px solid #3B6D11">
+        <span style="font-size:16px;flex-shrink:0">②</span>
+        <div style="font-size:11px;line-height:1.5">Los <strong>estados, comentarios y montos</strong> ya trabajados se preservan para asuntos que coincidan (mismo cliente + asunto).</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#EAF3DE;border-radius:8px;border-left:3px solid #3B6D11">
+        <span style="font-size:16px;flex-shrink:0">③</span>
+        <div style="font-size:11px;line-height:1.5">Al terminar, el panel generará el Excel actualizado y te guiará para <strong>subirlo a OneDrive</strong> y compartirlo con todo el equipo.</div>
+      </div>
+    </div>
+
+    <div style="background:#FAEEDA;border-radius:8px;padding:9px 12px;font-size:10.5px;color:#854F0B;margin-bottom:4px">
+      ⚠ <strong>Atención:</strong> los asuntos que no coincidan con la base anterior se agregarán como nuevos. Los que ya no estén en el export TB se marcarán pero no se eliminarán.
+    </div>
+
+    <div class="mfoot">
+      <button class="btn" onclick="closeOv('ovTBConfirm')">Cancelar</button>
+      <button class="btn primary" onclick="closeOv('ovTBConfirm');document.getElementById('fInput').click()">Seleccionar archivo →</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="ovEncargo">
+  <div class="modal">
+    <h2>Agregar encargo</h2>
+    <div class="modal-sub">Busca en la base cargada o registra un cliente/asunto nuevo provisionalmente.</div>
+    <div class="fg">
+      <div class="ff full"><span class="flbl">Cliente</span>
+        <input id="nClient" class="fi" list="clientOpts" autocomplete="off" placeholder="Empieza a escribir el cliente…">
+        <datalist id="clientOpts"></datalist>
+        <div class="vld" id="vldClient"></div>
+      </div>
+      <div class="ff full"><span class="flbl">Asunto</span>
+        <input id="nMatter" class="fi" list="matterOpts" autocomplete="off" placeholder="Escribe primero el cliente…" disabled>
+        <datalist id="matterOpts"></datalist>
+        <div class="vld" id="vldMatter"></div>
+      </div>
+      <div class="ff"><span class="flbl">Período</span><input type="month" id="nPeriod" class="fi" value="2026-06"></div>
+      <div class="ff"><span class="flbl">Monto a facturar (USD)</span><input type="number" id="nAmount" class="fi" min="0" step="0.01" value="1000"></div>
+      <div class="ff"><span class="flbl">Socio</span><input id="nSocio" class="fi" list="socioOpts" autocomplete="off" placeholder="Selecciona o escribe"><datalist id="socioOpts"></datalist></div>
+      <div class="ff"><span class="flbl">Forma de liquidación</span>
+        <select id="nForma" class="fi"><option value="">Seleccionar…</option><option>FLAT FEE</option><option>HITOS</option><option>RETAINER</option><option>TASA</option></select>
+      </div>
+      <div class="ff"><span class="flbl">Área</span>
+        <select id="nArea" class="fi"><option value="">Seleccionar…</option><option>Consultoría</option><option>Educación</option><option>Inspecciones</option><option>Procesal</option><option>Relaciones Laborales</option></select>
+      </div>
+      <div class="ff"><span class="flbl">Responsable</span><select id="nResp" class="fi"></select></div>
+      <div class="ff full"><span class="flbl">Comentario</span><input id="nComment" class="fi" placeholder="Observación opcional"></div>
+      <div class="ff full"><div class="auto-note" id="ageNote">La clasificación se calculará automáticamente según el período y la fecha del portal.</div></div>
+    </div>
+    <div class="mfoot"><button class="btn" onclick="closeOv('ovEncargo')">Cancelar</button><button class="btn green" onclick="confirmEncargo()">Agregar</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL USUARIO -->
+<div class="ov" id="ovUser">
+  <div class="modal" style="width:400px">
+    <h2>👤 ¿Quién eres?</h2>
+    <div class="modal-sub">Tu nombre se usará para el registro de cambios en la base compartida. Solo necesitas ingresarlo una vez.</div>
+    <div class="fg" style="grid-template-columns:1fr">
+      <div class="ff full">
+        <span class="flbl">Tu nombre</span>
+        <select id="userNameInp" class="fi">
+          <option value="">Selecciona tu nombre…</option>
+          <option>Andrea</option>
+          <option>Fabrissio</option>
+          <option>Cristina</option>
+          <option>Katherine</option>
+          <option>Mayte</option>
+        </select>
+      </div>
+      <div class="ff full">
+        <span class="flbl">O escribe un nombre diferente</span>
+        <input id="userNameCustom" class="fi" placeholder="Ej: César" oninput="if(this.value) document.getElementById('userNameInp').value=''">
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn primary" onclick="confirmUser()">Confirmar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GUÍA SUBIDA ONEDRIVE -->
+<div class="ov" id="ovUpload">
+  <div class="modal" style="width:520px">
+    <h2>☁️ Subir a OneDrive</h2>
+    <div class="modal-sub" id="odUploadMsg">El archivo <strong>Preliquidacion_Base.xlsx</strong> ya se descargó en tu carpeta de Descargas. Sigue estos pasos para sincronizar con el equipo:</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0">
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#F3F8FC;border-radius:8px;border-left:3px solid #185FA5">
+        <span style="background:#185FA5;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</span>
+        <span style="font-size:12px">Abre OneDrive y ve a la carpeta <strong>Preliquidacion_VyT/Ops/</strong>.</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#F3F8FC;border-radius:8px;border-left:3px solid #185FA5">
+        <span style="background:#185FA5;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</span>
+        <span style="font-size:12px">Arrastra <strong>Preliquidacion_Ops.xlsx</strong> a esa carpeta. OneDrive preguntará si deseas <strong>reemplazar</strong> el existente — confirma <strong>Sí</strong>.</span>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:#EAF3DE;border-radius:8px;border-left:3px solid #3B6D11">
+        <span style="background:#3B6D11;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">✓</span>
+        <span style="font-size:12px">En los próximos <strong>45 segundos</strong>, el panel de todos los miembros del equipo sincronizará automáticamente los cambios.</span>
+      </div>
+    </div>
+    <div style="background:#FAEEDA;border-radius:8px;padding:10px;font-size:11px;color:#854F0B;margin-bottom:4px">
+      💡 <strong>Tip:</strong> fija la carpeta de OneDrive en el acceso rápido de Windows Explorer para subir en 10 segundos.
+    </div>
+    <div class="mfoot"><button class="btn primary" onclick="closeOv('ovUpload');toast('✓ Listo. Los cambios estarán disponibles para el equipo en el próximo sync.')">Entendido</button></div>
+  </div>
+</div>
+
+
+<script>
+// ══ DATOS REALES TB — BASE MAYO 2026 ═════════════════════════════════════════
+// [id, cliente, asunto, socio, formaNorm, formaOrig, areaNorm, periodo, horas, montoUSD]
+const TB_RAW=[];
+
+let data = TB_RAW.map(r => ({
+  id:r[0], cliente:r[1], asunto:r[2], socio:r[3],
+  forma:r[4], formaOrig:r[5], area:r[6], periodo:r[7],
+  hProd:r[8], hFact:r[8],  // hFact editable
+  montoTB:r[9], montoFact:r[9],
+  estado:'POR ENVIAR', responsable:'', proyeccion:null,
+  factura:'', fechaFac:'', moneda:'USD', tipoCambio:3.75,
+  comentario:'', isNew:false
+}));
+
+// ══ CONSTANTES ════════════════════════════════════════════════════════════════
+const ESTADOS = ['POR ENVIAR','OC EN GESTION','PENDIENTE QUE SE DEVENGUE EL HITO',
+                 'PENDIENTE INDICACIÓN DE SOCIO','POR FACTURAR','FACTURADO',
+                 'CASTIGADO','ASOCIADO'];
+const RESPONSABLES = ['Andrea','Fabrissio','Cristina','Katherine','Mayte'];
+const AREAS  = ['Consultoría','Educación','Inspecciones','Procesal','Relaciones Laborales'];
+const FORMAS = ['FLAT FEE','HITOS','RETAINER','TASA'];
+const SOCIO_MAP = {
+  'AHG':'Alfonso Higa','ASV':'Alfredo Salvador','EMV':'Eduardo Mercado',
+  'FML':'Fabiola Maza','HPM':'Herbert Prelle','JGL':'Juan Carlos Girao',
+  'JTM':'Jorge Toyama','LVR':'Luis Vinatea','MAS':'Magaly Alarcon',
+  'RMM':'Renato Mejia','RMR':'Roberto Matallana'
+};
+const AREA_MAP_JS = {
+  'Auditoría':'Consultoría','Comercial':null,'Consultoría':'Consultoría',
+  'Educación':'Educación','Inspecciones':'Inspecciones','Migratorio':'Consultoría',
+  'Procesal':'Procesal','Proyectos Especiales':'Consultoría',
+  'Relacionamiento Laboral':'Relaciones Laborales','Relaciones Colectivas':'Consultoría',
+  'SST':'Consultoría','Temas Internos':null
+};
+const FORMA_MAP_JS = {
+  'CAP':'TASA','ESCALONADA':'RETAINER','FLAT FEE':'FLAT FEE',
+  'HITOS':'HITOS','PROPORCIONAL':'TASA','RETAINER':'RETAINER','TASA':'TASA'
+};
+const AREA_COLORS  = ['#185FA5','#1D9E75','#995A08','#433A95','#A32D2D'];
+const FORMA_COLORS = ['#378ADD','#EF9F27','#3B6D11','#185FA5'];
+const AGE_COLORS   = ['#1D9E75','#D85A30'];
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+// ══ ESTADO ════════════════════════════════════════════════════════════════════
+let SCRIPT_URL = localStorage.getItem('vyt_su') || '';
+let CUR_USER   = localStorage.getItem('vyt_usr') || '';
+let SOURCE     = 'local';
+let syncTimer  = null;
+let newId      = Math.max(...data.map(r=>r.id)) + 1;
+let modalClientKey = '';
+let modalMatterId  = null;
+let respByClient   = {};
+const expanded  = new Set();
+const refAreas  = new Set();
+const filters   = {periodo:new Set(),socio:new Set(),area:new Set(),forma:new Set(),estado:new Set()};
+let FECHA_DESDE = '', FECHA_HASTA = '';
+
+// Inicializar responsable por cliente
+[...new Set(data.map(r=>r.cliente))].forEach(c => {
+  respByClient[c] = data.find(r=>r.cliente===c)?.responsable || RESPONSABLES[0];
+});
+
+// ══ UTILS ═════════════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const money  = n => '$ '+Math.round(Number(n)||0).toLocaleString('en-US');
+const money2 = n => '$ '+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});
+const hrs    = n => Number(n||0).toFixed(1);
+const esc    = s => String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const sum    = (rows,k) => rows.reduce((a,r)=>a+(Number(r[k])||0),0);
+const uniq   = (rows,k) => [...new Set(rows.map(r=>r[k]).filter(v=>v!=null&&v!==''))];
+const norm   = s => String(s||'').trim().toLocaleLowerCase('es');
+function fmtPer(p){if(!p)return'—';let m,y;if(/^\d{2}-\d{4}$/.test(p)){[m,y]=p.split('-')}else if(/^\d{4}-\d{2}$/.test(p)){[y,m]=p.split('-')}else return p;return MONTHS[+m-1]+'-'+String(y).slice(-2)}
+function toMonthIn(p){if(/^\d{2}-\d{4}$/.test(p)){const[m,y]=p.split('-');return y+'-'+m}return p}
+function fromMonthIn(p){if(!p)return'';const[y,m]=p.split('-');return m+'-'+y}
+function cutoffDate(period){let m,y;if(/^\d{2}-\d{4}$/.test(period)){[m,y]=period.split('-')}else{[y,m]=period.split('-')}return new Date(+y,+m+2,0,23,59,59,999)}
+function portalDate(){const v=$('portalDate').value;return v?new Date(v+'T12:00:00'):new Date()}
+function classif(r){return portalDate()>cutoffDate(r.periodo)?'NO CORRIENTE':'CORRIENTE'}
+function grpClassif(rows){const s=new Set(rows.map(classif));return s.size===1?[...s][0]:'MIXTO'}
+function grp(rows,k){const m=new Map();rows.forEach(r=>{const v=r[k]||'—';if(!m.has(v))m.set(v,[]);m.get(v).push(r)});return m}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400)}
+function showLoad(t){$('ltxt').textContent=t;$('lol').classList.add('show')}
+function hideLoad(){$('lol').classList.remove('show')}
+function markDirty(){$('dirty').classList.add('show')}
+function encKey(p){return encodeURIComponent(p.join('¦'))}
+function decKey(v){return decodeURIComponent(v).split('¦')}
+
+// ══ FILTER ROWS ═══════════════════════════════════════════════════════════════
+function filterRows(){
+  const q = norm($('globalSearch').value);
+  return data.filter(r=>{
+    if(q){
+      const hay=[r.cliente,r.asunto,r.socio,r.forma,r.area,r.periodo,fmtPer(r.periodo),
+                 r.estado,r.responsable,r.factura,r.comentario,classif(r)].map(norm).join(' | ');
+      if(!hay.includes(q))return false;
+    }
+    for(const k of Object.keys(filters)){if(filters[k].size&&!filters[k].has(String(r[k])))return false}
+    return true;
+  });
+}
+
+// ══ ROWS BY GROUP (para edición masiva) ═══════════════════════════════════════
+function rowsByKey(parts){
+  const [level,client,forma,area,id]=parts;
+  if(level==='matter')return data.filter(r=>r.id===+id);
+  if(level==='area')  return data.filter(r=>r.cliente===client&&r.forma===forma&&r.area===area);
+  if(level==='form')  return data.filter(r=>r.cliente===client&&r.forma===forma);
+  if(level==='client')return data.filter(r=>r.cliente===client);
+  return[];
+}
+
+// ══ REDISTRIBUIR MONTO ════════════════════════════════════════════════════════
+function redistribute(rows,total){
+  if(!rows.length)return false;
+  if(rows.length===1){rows[0].montoFact=total;return true}
+  const totH=sum(rows,'hFact');
+  if(totH<=0){toast('No se puede distribuir: las Horas Facturables deben ser > 0.');return false}
+  let asgn=0;
+  rows.forEach((r,i)=>{
+    if(i===rows.length-1)r.montoFact=Math.max(0,total-asgn);
+    else{const v=Math.round(total*(r.hFact/totH)*100)/100;r.montoFact=v;asgn+=v}
+  });
+  return true;
+}
+
+function areaRefKey(c,f,a){return[c,f,a].join('¦')}
+
+function setGroupAmount(key,val){
+  const parts=decKey(key),rows=rowsByKey(parts),total=Math.max(0,+val||0),level=parts[0];
+  if(redistribute(rows,total)){
+    if(level==='form'){uniq(rows,'area').forEach(a=>refAreas.add(areaRefKey(parts[1],parts[2],a)));toast('Monto distribuido por Horas Facturables.')}
+    else if(level==='area'){refAreas.delete(areaRefKey(parts[1],parts[2],parts[3]));toast('Monto del Área actualizado.')}
+    markDirty();renderAll();
+  }
+}
+
+function setMatterHFact(id,val){
+  const r=data.find(x=>x.id===+id);if(!r)return;
+  r.hFact=Math.max(0,+val||0);markDirty();renderAll();toast('Horas Facturables actualizadas.')
+}
+
+function setGroupHFact(key,val){
+  const parts=decKey(key),rows=rowsByKey(parts),level=parts[0],total=Math.max(0,+val||0);
+  if(level!=='area'){toast('Horas Facturables solo editables a nivel Área.');return}
+  if(!rows.length)return;
+  const prev=sum(rows,'hFact'),basis=prev>0?'hFact':'hProd',basisT=prev>0?prev:sum(rows,'hProd');
+  if(rows.length===1){rows[0].hFact=total}
+  else{let asgn=0;rows.forEach((r,i)=>{
+    if(i===rows.length-1)r.hFact=Math.max(0,Math.round((total-asgn)*100)/100);
+    else{const v=Math.round(total*((+r[basis]||0)/basisT)*100)/100;r.hFact=v;asgn+=v}
+  })}
+  markDirty();renderAll();toast('Horas Facturables del Área distribuidas proporcionalmente.')
+}
+
+function setGroupField(key,field,val){
+  const rows=rowsByKey(decKey(key));
+  if(field==='estado'){
+    rows.forEach(r=>{r.estado=val;if(val==='FACTURADO')r.proyeccion=false});
+    if(val==='FACTURADO')toast('Estado Facturado: registros retirados de la proyección.');
+  } else if(field==='proyeccion'){
+    const req=val==='true'?true:val==='false'?false:null;
+    rows.forEach(r=>r.proyeccion=r.estado==='FACTURADO'?false:req);
+    if(req&&rows.some(r=>r.estado==='FACTURADO'))toast('Los asuntos Facturados permanecen fuera de la proyección.');
+  } else if(field==='fechaFac'){
+    rows.forEach(r=>{r.fechaFac=val; if(val && r.estado!=='FACTURADO'){r.estado='FACTURADO';r.proyeccion=false;}});
+    toast('Fecha de facturación registrada.');
+    } else {rows.forEach(r=>r[field]=val)}
+  markDirty();renderAll();
+}
+
+function setInvoice(key,val){
+  rowsByKey(decKey(key)).filter(r=>r.estado==='FACTURADO').forEach(r=>r.factura=String(val||'').trim().toUpperCase());
+  markDirty();renderAll();toast('N° de factura actualizado.');
+}
+
+function setComment(id,val){
+  const r=data.find(x=>x.id===+id);if(!r)return;
+  r.comentario=String(val||'').trim();markDirty();renderTable();
+}
+
+// ══ KPIs ══════════════════════════════════════════════════════════════════════
+function renderKPIs(){
+  const rows=filterRows();
+  const active=rows.filter(r=>!['FACTURADO','CASTIGADO','ASOCIADO'].includes(r.estado));
+  const proy=active.filter(r=>r.proyeccion===true);
+  const nproy=active.filter(r=>r.proyeccion===false);
+  const pf=rows.filter(r=>r.estado==='POR FACTURAR');
+  const facAll=rows.filter(r=>r.estado==='FACTURADO');
+  const fac=facAll.filter(r=>{
+    if(FECHA_DESDE&&r.fecha<FECHA_DESDE)return false;
+    if(FECHA_HASTA&&r.fecha>FECHA_HASTA)return false;
+    return true;
+  });
+  const pe=rows.filter(r=>r.estado==='POR ENVIAR');
+  const oc=rows.filter(r=>r.estado==='OC EN GESTION');
+  const facLbl=(FECHA_DESDE||FECHA_HASTA)?`${FECHA_DESDE||'…'} → ${FECHA_HASTA||'…'}`:'📅 filtrar fecha';
+
+  $('kpis').innerHTML=
+    kpi('A facturar proyectado',money(sum(proy,'montoFact')),`${proy.length} asuntos Proy: Sí`,'kpi-green','')+
+    kpi('Monto no proyectado',money(sum(nproy,'montoFact')),`${nproy.length} asuntos Proy: No`,'kpi-amber','')+
+    kpi('Por facturar',money(sum(pf,'montoFact')),`${pf.length} asuntos`,'kpi-blue','')+
+    kpi('Facturado',money(sum(fac,'montoFact')),`${fac.length} asuntos`,'kpi-teal',
+      `<button class="date-filter" onclick="openDateFilter()">${facLbl}</button>`)+
+    kpi('Por enviar',money(sum(pe,'montoFact')),`${pe.length} asuntos`,'kpi-amber','')+
+    kpi('OC en gestión',money(sum(oc,'montoFact')),`${oc.length} asuntos`,'kpi-blue','');
+}
+function kpi(label,val,sub,cls,extra){
+  return `<div class="kpi-card ${cls}"><div class="kpi-label"><span>${label}</span>${extra}</div><div class="kpi-value">${val}</div><div class="kpi-sub">${sub}</div></div>`;
+}
+function openDateFilter(){
+  const d=prompt('Fecha DESDE (AAAA-MM-DD):',FECHA_DESDE);if(d===null)return;
+  const h=prompt('Fecha HASTA (AAAA-MM-DD):',FECHA_HASTA);if(h===null)return;
+  FECHA_DESDE=d.trim();FECHA_HASTA=h.trim();renderKPIs();
+}
+
+// ══ GRÁFICOS ══════════════════════════════════════════════════════════════════
+function donutHtml(entries,colors){
+  const total=entries.reduce((a,e)=>a+e[1],0);
+  if(!total)return'<div class="chart-empty">Sin datos</div>';
+  let acc=0;const stops=[];
+  entries.forEach((e,i)=>{const s=acc/total*100;acc+=e[1];const en=acc/total*100;stops.push(`${colors[i%colors.length]} ${s}% ${en}%`)});
+  const legend=entries.map((e,i)=>`<div class="legend-item"><span class="legend-swatch" style="background:${colors[i%colors.length]}"></span><span class="legend-name">${esc(e[0])}</span><span class="legend-amount">${money(e[1])}<span class="legend-pct">${Math.round(e[1]/total*100)}%</span></span></div>`).join('');
+  return `<div class="donut-layout"><div class="donut" style="background:conic-gradient(${stops.join(',')})"><div class="donut-center"><strong>${money(total)}</strong><span>Total</span></div></div><div class="legend">${legend}</div></div>`;
+}
+
+function renderCharts(){
+  const rows=filterRows();
+  // Socio — barras
+  const sEntr=[...grp(rows,'socio')].map(([n,rs])=>[n,sum(rs,'montoTB')]).sort((a,b)=>b[1]-a[1]);
+  const sMax=sEntr[0]?.[1]||1;
+  $('socioChart').innerHTML=sEntr.length?sEntr.map(([n,v])=>`<div class="bar-row"><div class="bar-name" title="${esc(n)}">${esc(n)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(1,v/sMax*100)}%"></div></div><div class="bar-value">${money(v)}</div></div>`).join(''):'<div class="chart-empty">Sin datos</div>';
+  // Área, Forma
+  $('areaChart').innerHTML=donutHtml(AREAS.map(a=>[a,sum(rows.filter(r=>r.area===a),'montoTB')]),AREA_COLORS);
+  $('formaChart').innerHTML=donutHtml(FORMAS.map(f=>[f,sum(rows.filter(r=>r.forma===f),'montoTB')]),FORMA_COLORS);
+  // Antigüedad
+  const proj=rows.filter(r=>r.proyeccion===true&&!['FACTURADO','CASTIGADO','ASOCIADO'].includes(r.estado));
+  const ac=sum(proj.filter(r=>classif(r)==='CORRIENTE'),'montoFact');
+  const anc=sum(proj.filter(r=>classif(r)==='NO CORRIENTE'),'montoFact');
+  $('ageChart').innerHTML=donutHtml([['Corriente (1-60d)',ac],['No corriente (61d+)',anc]],AGE_COLORS);
+}
+
+// ══ TABLA ══════════════════════════════════════════════════════════════════════
+function stateSelect(rows,key,enabled=true){
+  if(!enabled)return'<span class="muted-txt">Resumen</span>';
+  const vals=uniq(rows,'estado'),val=vals.length===1?vals[0]:'';
+  const ph=vals.length>1?'Mixto':'—';
+  return `<select class="ed" data-f="estado" data-k="${key}"><option value="" ${val?'':'selected'} disabled hidden>${ph}</option>${ESTADOS.map(x=>`<option value="${esc(x)}" ${x===val?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+}
+function respSelect(rows,key){
+  const vals=uniq(rows,'responsable'),val=vals.length===1?vals[0]:'';
+  const ph=vals.length>1?'Mixto':'—';
+  return `<select class="ed" data-f="responsable" data-k="${key}"><option value="" ${val?'':'selected'} disabled hidden>${ph}</option>${RESPONSABLES.map(x=>`<option value="${x}" ${x===val?'selected':''}>${x}</option>`).join('')}</select>`;
+}
+function projCell(rows,key,enabled=true){
+  if(rows.every(r=>r.estado==='FACTURADO'))return'<span class="pj-auto">No · automático</span>';
+  // Semáforo ámbar: todos null = pendiente de definir
+  const allNull=rows.every(r=>r.proyeccion===null);
+  const anyNull=rows.some(r=>r.proyeccion===null);
+  if(!enabled){
+    if(allNull)return'<span class="pj-pending"><span class="pj-dot"></span>Pendiente</span>';
+    const aY=rows.every(r=>r.proyeccion===true),aN=rows.every(r=>r.proyeccion===false);
+    return`<span class="${aY?'pj-yes':aN?'pj-no':anyNull?'pj-mix':'pj-mix'}">${aY?'Sí':aN?'No':'Mixto'}</span>`;
+  }
+  // Nivel asunto (editable)
+  if(allNull){
+    return`<span class="pj-pending" style="cursor:pointer" title="Sin definir — selecciona Sí o No"><span class="pj-dot"></span><select class="ed" data-f="proyeccion" data-k="${key}" style="border:0;background:transparent;color:var(--amber);font-weight:700;font-size:8px;padding:0;cursor:pointer"><option value="" selected>Pendiente</option><option value="true">Sí</option><option value="false">No</option></select></span>`;
+  }
+  const vals=new Set(rows.map(r=>r.proyeccion)),val=vals.size===1&&rows[0].proyeccion!==null?String(rows[0].proyeccion):'',ph=anyNull?'Mixto':'—';
+  return `<select class="ed" data-f="proyeccion" data-k="${key}"><option value="" ${val?'':'selected'} disabled hidden>${ph}</option><option value="true" ${val==='true'?'selected':''}>Sí</option><option value="false" ${val==='false'?'selected':''}>No</option></select>`;
+}
+function classBadge(rows){const c=grpClassif(rows);return`<span class="badge ${c==='CORRIENTE'?'bdg-cur':c==='NO CORRIENTE'?'bdg-old':'bdg-mix'}">${c==='CORRIENTE'?'Corriente':c==='NO CORRIENTE'?'No corriente':'Mixto'}</span>`}
+function perLabel(rows){const ps=uniq(rows,'periodo');return ps.length===1?fmtPer(ps[0]):ps.length+' períodos'}
+function amtInput(rows,key,title){
+  const total = sum(rows,'montoFact');
+  const mon   = rows.length===1 ? rows[0].moneda : [...new Set(rows.map(r=>r.moneda))].length===1 ? rows[0].moneda : 'MIX';
+  const isPEN = mon==='PEN';
+  const tc    = isPEN && rows.length===1 ? rows[0].tipoCambio : null;
+  const hint  = isPEN && tc ? '<div style="font-size:6.5px;color:var(--amb);text-align:right;margin-top:1px">S/ (TC '+tc.toFixed(2)+')</div>' : '';
+  return '<div class="amt-wrap"><input class="ed amt'+(isPEN?' pen-amt':'')+'" type="number" min="0" step="0.01" value="'+total.toFixed(2)+'" title="'+esc(title)+'" data-amt="'+key+'">'+hint+'</div>';
+}
+function hFactInput(r){const chg=Math.abs((r.hFact||0)-(r.hProd||0))>0.001;return`<input class="ed hrs ${chg?'chg':''}" type="number" min="0" step="0.01" value="${(+r.hFact||0).toFixed(2)}" title="Horas Facturables del asunto" data-hfid="${r.id}">`}
+function hFactGrpInput(rows,key){const chg=Math.abs(sum(rows,'hFact')-sum(rows,'hProd'))>0.001;return`<input class="ed hrs ${chg?'chg':''}" type="number" min="0" step="0.01" value="${sum(rows,'hFact').toFixed(2)}" title="Editar total del Área: se distribuirá proporcionalmente entre sus asuntos" data-hfk="${key}">`}
+function invCell(rows,key){
+  const fac=rows.filter(r=>r.estado==='FACTURADO');
+  if(!fac.length)return'<span class="muted-txt">—</span>';
+  if(fac.length!==rows.length)return`<span class="inv-pend">${fac.length} facturado${fac.length===1?'':'s'}</span>`;
+  const vals=uniq(fac,'factura'),val=vals.length===1?vals[0]:'',ph=vals.length>1?'Mixto':'Ingresar';
+  return`<input class="ed inv" value="${esc(val)}" placeholder="${ph}" data-inv="${key}" title="Número de factura">`;
+}
+// ── Celda Moneda ─────────────────────────────────────────────────────────
+function monedaCell(rows, key){
+  const monedas = [...new Set(rows.map(r=>r.moneda))];
+  const mon     = monedas.length===1 ? monedas[0] : 'MIX';
+  if(mon==='MIX') return '<span style="font-size:8px;color:var(--muted)">Mixto</span>';
+
+  // TC representativo del grupo: el más frecuente entre los rows PEN
+  const penRows = rows.filter(r=>r.moneda==='PEN');
+  const tc = penRows.length
+    ? (penRows.reduce((a,r)=>a+(r.tipoCambio||3.75),0)/penRows.length).toFixed(2)
+    : (rows[0].tipoCambio||3.75).toFixed(2);
+
+  const isPEN = mon==='PEN';
+  // Usar el key codificado como índice simple — evitar colisiones con hash numérico
+  const kid = 'tc_' + btoa(key).replace(/[^a-z0-9]/gi,'');
+
+  const sel_cls = isPEN ? 'pen' : 'usd';
+  const tc_style = isPEN ? 'display:inline-block' : 'display:none';
+  const oc = "onMonedaChange(this,'" + kid + "')";
+  return [
+    '<div class="moneda-wrap">',
+    '<select class="moneda-sel ' + sel_cls + '" data-k="' + key + '" onchange="' + oc + '">',
+    '<option value="USD"' + (mon==='USD'?' selected':'') + '>USD $</option>',
+    '<option value="PEN"' + (mon==='PEN'?' selected':'') + '>PEN S/</option>',
+    '</select>',
+    '<input id="' + kid + '" class="tc-inp" type="number" min="1" step="0.01"',
+    ' value="' + tc + '" placeholder="T.C."',
+    ' title="Tipo de cambio — aplica a todos los asuntos de este nivel"',
+    ' data-k="' + key + '"',
+    ' onchange="onTCChange(this)" oninput="onTCChange(this)"',
+    ' style="' + tc_style + ';width:50px">',
+    '</div>'
+  ].join('');
+}
+
+// Handler dinámico del selector de moneda
+// ── Aplicar moneda + TC a un grupo de rows (función central) ─────────────
+// Esta es la única función que toca moneda y TC juntos para evitar
+// inconsistencias entre el TC del selector y el TC guardado por fila.
+function applyMonedaTC(key, moneda, tc){
+  const rows = rowsByKey(decKey(key));
+  if(!rows.length) return;
+  const tcVal = parseFloat(tc) || 3.75;
+  rows.forEach(r => {
+    r.moneda     = moneda;
+    r.tipoCambio = tcVal;
+    if(moneda === 'PEN'){
+      r.montoFact = Math.round(r.montoTB * tcVal * 100) / 100;
+    } else {
+      r.montoFact  = r.montoTB;   // USD: restaurar monto TB original
+      r.tipoCambio = 3.75;
+    }
+  });
+  const n = rows.length;
+  if(moneda === 'USD')
+    toast('USD — ' + n + ' asunto' + (n===1?'':'s') + ' restablecidos al valor TB en dólares.');
+  else
+    toast('PEN S/ (TC ' + tcVal.toFixed(2) + ') — ' + n + ' asunto' + (n===1?'':'s') + ' convertidos.');
+  markDirty();
+  renderAll();
+}
+
+// Handler del selector Moneda
+function onMonedaChange(sel, tcId){
+  const isPEN = sel.value === 'PEN';
+  sel.className = 'moneda-sel ' + (isPEN ? 'pen' : 'usd');
+  // Buscar el input TC — primero por id, luego por data-k en el mismo contenedor
+  let tcInp = document.getElementById(tcId);
+  if(!tcInp){
+    // Fallback: buscar el input TC hermano del selector
+    tcInp = sel.parentElement ? sel.parentElement.querySelector('input.tc-inp') : null;
+  }
+  if(tcInp) tcInp.style.display = isPEN ? 'inline-block' : 'none';
+  const k = sel.dataset.k;
+  if(!k) return;
+  if(isPEN && tcInp && (!tcInp.value || parseFloat(tcInp.value) <= 0))
+    tcInp.value = '3.75';
+  const tc = tcInp ? (parseFloat(tcInp.value) || 3.75) : 3.75;
+  applyMonedaTC(k, sel.value, tc);
+  if(isPEN && tcInp) setTimeout(()=>{ tcInp.focus(); tcInp.select(); }, 80);
+}
+
+// Handler del campo TC — debounce 400ms, aplica a todos los rows del nivel
+let _tcTimer = null;
+function onTCChange(inp){
+  clearTimeout(_tcTimer);
+  _tcTimer = setTimeout(()=>{
+    const k  = inp.dataset.k;
+    const tc = parseFloat(inp.value);
+    if(!k || !tc || tc <= 0) return;
+    // Aplica el mismo TC a todos los rows del nivel y recalcula montoFact
+    applyMonedaTC(k, 'PEN', tc);
+  }, 400);
+}
+
+// ── Celda Fecha Facturado ─────────────────────────────────────────────────
+function fechaFacCell(rows, key){
+  const isFac = rows.some(r=>r.estado==='FACTURADO');
+  if(!isFac) return '<span class="fecha-fac-dis">—</span>';
+  const vals = [...new Set(rows.filter(r=>r.estado==='FACTURADO').map(r=>r.fechaFac||''))];
+  const val  = vals.length===1 ? vals[0] : '';
+  const ph   = vals.length>1 ? 'Mixto' : 'dd/mm/aaaa';
+  return `<input type="date" class="fecha-fac show ed" value="${val}" placeholder="${ph}" data-f="fechaFac" data-k="${key}" title="Fecha de emisión de factura">`;
+}
+
+function cmmCell(rows,level){
+  if(level==='matter'){const r=rows[0];return`<input class="ed cmt" value="${esc(r.comentario||'')}" placeholder="Agregar comentario" data-cmt="${r.id}">`}
+  const cs=rows.map(r=>String(r.comentario||'').trim()).filter(Boolean),vals=[...new Set(cs)];
+  if(!cs.length)return'<span class="cmt-sum">—</span>';
+  if(vals.length===1)return`<span class="cmt-sum" title="${esc(vals[0])}">${esc(vals[0])}</span>`;
+  return`<span class="cmt-sum">${cs.length} comentario${cs.length===1?'':'s'}</span>`;
+}
+
+function rowBase(cls,ind,xKey,label,chip,sub,rows,key,edSt=true,edPr=true,edAmt=true,edHF=false){
+  const open=expanded.has(xKey),parts=decKey(key),level=parts[0];
+  const isRef=level==='area'&&refAreas.has(areaRefKey(parts[1],parts[2],parts[3]));
+  const amtCell=edAmt?`<div class="amt-wrap">${amtInput(rows,key,'Distribuye entre asuntos según Horas Facturables.')}${isRef?'<span class="ref-note">Dist. referencial</span>':''}</div>`:`<div class="static num">${money2(sum(rows,'montoFact'))}</div>`;
+  const hfc=edHF?hFactGrpInput(rows,key):`<div class="static num">${hrs(sum(rows,'hFact'))}</div>`;
+  return`<tr class="${cls}"><td><div class="hcell ${ind}"><button class="xbtn ${open?'open':''}" data-xk="${xKey}">${open?'−':'+'}</button><div class="lbl-wrap"><div class="main-lbl" title="${esc(label)}">${esc(label)}<span class="chip ${chip.c}">${chip.t}</span></div><div class="sub-lbl">${esc(sub)}</div></div></div></td><td class="ctr">${perLabel(rows)}</td><td class="num static">${hrs(sum(rows,'hProd'))}</td><td>${hfc}</td><td class="num static">${money2(sum(rows,'montoTB'))}</td><td>${amtCell}</td><td>${monedaCell(rows,key)}</td><td>${stateSelect(rows,key,edSt)}</td><td>${respSelect(rows,key)}</td><td class="ctr">${projCell(rows,key,edPr)}</td><td>${invCell(rows,key)}</td><td class="ctr">${fechaFacCell(rows,key)}</td><td class="ctr">${classBadge(rows)}</td><td>${cmmCell(rows,level)}</td></tr>`;
+}
+
+function matterRow(r){
+  const sinMov = r.sinMovTB ? '<span class="chip" style="background:var(--red-soft,#FCEBEB);color:var(--red,#A32D2D)">Sin mov. TB</span>' : '';
+  const key=encKey(['matter','','','',r.id]);
+  const isCas=r.estado==='CASTIGADO'||r.estado==='ASOCIADO';
+  return`<tr class="row-matter" style="${isCas?'opacity:0.45;':''}"><td><div class="hcell ind3"><span style="width:20px;min-width:20px;text-align:center;color:var(--muted)">•</span><div class="lbl-wrap"><div class="main-lbl" title="${esc(r.asunto)}">${esc(r.asunto)}${r.isNew?'<span class="chip new">NUEVO</span>':sinMov}</div><div class="sub-lbl">${esc(r.socio)} · Asunto</div></div></div></td><td class="ctr">${fmtPer(r.periodo)}</td><td class="num static" title="Horas originales TB">${hrs(r.hProd)}</td><td>${hFactInput(r)}</td><td class="num static">${money2(r.montoTB)}</td><td>${amtInput([r],key,'Edición individual')}</td><td>${monedaCell([r],key)}</td><td>${stateSelect([r],key,true)}</td><td>${respSelect([r],key)}</td><td class="ctr">${projCell([r],key,true)}</td><td>${invCell([r],key)}</td><td class="ctr">${fechaFacCell([r],key)}</td><td class="ctr">${classBadge([r])}</td><td>${cmmCell([r],'matter')}</td></tr>`;
+}
+
+function renderTable(){
+  const rows=filterRows(), clients=grp(rows,'cliente');
+  let html='';
+  for(const [client,cr] of clients){
+    const ck=encKey(['open-client',client]),cKey=encKey(['client',client]);
+    html+=rowBase('row-client','',ck,client,{t:'Cliente',c:''},`${cr.length} asuntos · ${uniq(cr,'forma').length} formas`,cr,cKey,true,true,false,false);
+    if(!expanded.has(ck))continue;
+    for(const [forma,fr] of grp(cr,'forma')){
+      const fk=encKey(['open-form',client,forma]),fKey=encKey(['form',client,forma]);
+      html+=rowBase('row-form','ind1',fk,forma,{t:'Forma',c:'form'},`${fr.length} asuntos · ${uniq(fr,'area').length} áreas`,fr,fKey,true,true,true,false);
+      if(!expanded.has(fk))continue;
+      for(const [area,ar] of grp(fr,'area')){
+        const ak=encKey(['open-area',client,forma,area]),aKey=encKey(['area',client,forma,area]);
+        html+=rowBase('row-area','ind2',ak,area,{t:'Área',c:'area'},`${ar.length} asuntos · Hs. Fact. editables`,ar,aKey,true,true,true,true);
+        if(!expanded.has(ak))continue;
+        ar.forEach(r=>html+=matterRow(r));
+      }
+    }
+  }
+  $('tBody').innerHTML=html||'<tr><td colspan="12"><div class="empty">No hay registros que coincidan con los filtros.</div></td></tr>';
+  $('tFoot').innerHTML=rows.length?`<tr><td>TOTAL · ${clients.size} clientes · ${rows.length} asuntos</td><td></td><td class="num mono">${hrs(sum(rows,'hProd'))}</td><td class="num mono">${hrs(sum(rows,'hFact'))}</td><td class="num mono">${money2(sum(rows,'montoTB'))}</td><td class="num mono">${money2(sum(rows,'montoFact'))}</td><td colspan="8"></td></tr>`:'';
+  $('fInfo').textContent=`${clients.size} clientes · ${rows.length} asuntos visibles`;
+}
+
+function renderAll(){renderKPIs();renderCharts();renderTable();
+  const ps=uniq(filterRows(),'periodo');
+  $('hPeriod').textContent=ps.length===1?fmtPer(ps[0]):ps.length?ps.length+' períodos':'—';
+}
+
+// ══ FILTROS MULTI-SELECT ══════════════════════════════════════════════════════
+function initMulti(containerId,key,label,values){
+  const root=$(containerId);
+  root.innerHTML=`<button class="btn multi-button" type="button"><span>${label}</span><span class="count-badge" hidden>0</span><span>⌄</span></button><div class="multi-menu"><div class="multi-head">Selección múltiple</div>${values.map(v=>`<label class="multi-option"><input type="checkbox" value="${esc(v)}"><span>${key==='periodo'?fmtPer(v):esc(v)}</span></label>`).join('')}</div>`;
+  const btn=root.querySelector('button'),menu=root.querySelector('.multi-menu'),badge=root.querySelector('.count-badge');
+  btn.addEventListener('click',e=>{e.stopPropagation();document.querySelectorAll('.multi-menu.open').forEach(x=>x!==menu&&x.classList.remove('open'));menu.classList.toggle('open')});
+  menu.addEventListener('click',e=>e.stopPropagation());
+  root.querySelectorAll('input').forEach(ch=>ch.addEventListener('change',()=>{
+    ch.checked?filters[key].add(ch.value):filters[key].delete(ch.value);
+    badge.textContent=filters[key].size;badge.hidden=!filters[key].size;
+    btn.classList.toggle('active',!!filters[key].size);renderAll();
+  }));
+}
+function clearFilters(){
+  Object.values(filters).forEach(s=>s.clear());
+  $('globalSearch').value='';
+  document.querySelectorAll('.multi-option input').forEach(x=>x.checked=false);
+  document.querySelectorAll('.count-badge').forEach(x=>{x.hidden=true;x.textContent='0'});
+  document.querySelectorAll('.multi-button').forEach(x=>x.classList.remove('active'));
+  renderAll();
+}
+
+// ══ ENCARGO NUEVO ══════════════════════════════════════════════════════════════
+function updateAgeNote(){
+  const p=fromMonthIn($('nPeriod').value);if(!p)return;
+  const c=classif({periodo:p}),lim=cutoffDate(p).toLocaleDateString('es-PE');
+  $('ageNote').textContent=`${fmtPer(p)} se clasificará como ${c==='CORRIENTE'?'Corriente':'No corriente'}. Fecha límite: ${lim}.`;
+}
+function openNewMatter(){
+  modalClientKey='';modalMatterId=null;
+  $('clientOpts').innerHTML=[...new Set(data.map(r=>r.cliente))].sort().map(c=>`<option value="${esc(c)}"></option>`).join('');
+  $('socioOpts').innerHTML=uniq(data,'socio').sort((a,b)=>a.localeCompare(b,'es')).map(x=>`<option value="${esc(x)}"></option>`).join('');
+  $('nResp').innerHTML=RESPONSABLES.map(x=>`<option>${x}</option>`).join('');
+  $('nClient').value='';$('nMatter').value='';$('nMatter').disabled=true;
+  $('nSocio').value='';$('nForma').value='';$('nArea').value='';
+  $('nSocio').readOnly=false;$('nForma').disabled=false;$('nArea').disabled=false;
+  $('vldClient').textContent='';$('vldMatter').textContent='';
+  updateAgeNote();$('ovEncargo').classList.add('open');
+  setTimeout(()=>$('nClient').focus(),50);
+}
+function closeOv(id){$(id).classList.remove('open')}
+function exactClient(){const v=norm($('nClient').value);return data.find(r=>norm(r.cliente)===v)||null}
+function exactMatter(client){const v=norm($('nMatter').value);return data.find(r=>norm(r.cliente)===norm(client?.cliente||'')&&norm(r.asunto)===v)||null}
+function validateNClient(){
+  const raw=$('nClient').value.trim(),client=exactClient();
+  $('nMatter').disabled=!raw;
+  if(!raw){modalClientKey='';$('vldClient').textContent='';$('vldClient').className='vld';return null}
+  const key=norm(raw);
+  if(modalClientKey!==key){$('nMatter').value='';modalMatterId=null;modalClientKey=key}
+  if(client){
+    $('matterOpts').innerHTML=data.filter(r=>norm(r.cliente)===norm(client.cliente)).map(r=>`<option value="${esc(r.asunto)}"></option>`).join('');
+    $('vldClient').textContent='✓ Cliente encontrado en la base.';$('vldClient').className='vld ok';
+    $('nResp').value=respByClient[client.cliente]||RESPONSABLES[0];
+  } else {
+    $('matterOpts').innerHTML='';
+    $('vldClient').textContent='ℹ Cliente nuevo — se registrará provisionalmente.';$('vldClient').className='vld info';
+  }
+  return client;
+}
+function validateNMatter(){
+  const client=exactClient(),raw=$('nMatter').value.trim();
+  if(!raw){modalMatterId=null;$('nSocio').readOnly=false;$('nForma').disabled=false;$('nArea').disabled=false;$('vldMatter').textContent='';return null}
+  const matter=client?exactMatter(client):null;
+  if(matter){
+    $('nSocio').value=matter.socio;$('nForma').value=matter.forma;$('nArea').value=matter.area;
+    $('nSocio').readOnly=true;$('nForma').disabled=true;$('nArea').disabled=true;
+    modalMatterId=matter.id;
+    $('vldMatter').textContent='✓ Asunto encontrado — datos maestros reutilizados.';$('vldMatter').className='vld ok';
+    return matter;
+  }
+  modalMatterId=null;$('nSocio').readOnly=false;$('nForma').disabled=false;$('nArea').disabled=false;
+  $('vldMatter').textContent='ℹ Asunto nuevo — completa Socio, Forma y Área.';$('vldMatter').className='vld info';
+  return null;
+}
+function confirmEncargo(){
+  validateNClient();
+  const clientEx=exactClient(),client=$('nClient').value.trim(),matter=$('nMatter').value.trim();
+  const base=clientEx?exactMatter(clientEx):null;
+  const period=fromMonthIn($('nPeriod').value);
+  if(!client){toast('Ingresa el cliente');return}
+  if(!matter){toast('Ingresa el asunto');return}
+  if(!period){toast('Selecciona el período');return}
+  const canon=clientEx?clientEx.cliente:client;
+  if(data.some(r=>norm(r.cliente)===norm(canon)&&norm(r.asunto)===norm(matter)&&r.periodo===period)){toast('Ese cliente/asunto ya existe en este período');return}
+  const socio=(base?.socio||$('nSocio').value).trim(),forma=base?.forma||$('nForma').value,area=base?.area||$('nArea').value;
+  if(!socio||!forma||!area){toast('Completa Socio, Forma y Área');return}
+  const resp=$('nResp').value||RESPONSABLES[0];
+  const row={id:newId++,cliente:canon,asunto:matter,socio,forma,formaOrig:base?.formaOrig||forma,area,periodo:period,
+    hProd:0,hFact:0,montoTB:0,montoFact:+$('nAmount').value||0,
+    estado:'POR ENVIAR',responsable:resp,proyeccion:null,factura:'',$comentario:$('nComment').value.trim(),isNew:true};
+  // fix typo
+  row.comentario = $('nComment').value.trim();
+  data.push(row);respByClient[canon]=resp;
+  // Expandir hasta el nivel del encargo
+  expanded.add(encKey(['open-client',canon]));
+  expanded.add(encKey(['open-form',canon,row.forma]));
+  expanded.add(encKey(['open-area',canon,row.forma,row.area]));
+  markDirty();closeOv('ovEncargo');
+  // Subir al sheet si hay conexión
+  if(SOURCE==='shared')postSheet({action:'add_encargo',tbRow:row,opRow:{id:row.id,estado:row.estado,responsable:row.responsable,proy:row.proyeccion?'SI':'NO',montoFact:row.montoFact,fecha:'',cc:'CORRIENTE',nfactura:'',comentario:row.comentario}});
+  renderAll();toast(base?'Encargo agregado con datos maestros':'Cliente/asunto nuevos registrados provisionalmente.');
+}
+
+// ══ CARGA ARCHIVO TB ══════════════════════════════════════════════════════════
+function openTBModal(){
+  // Si ya hay datos cargados, pedir confirmación
+  if(data.length > 0){
+    $('ovTBConfirm').classList.add('open');
+  } else {
+    // Primera carga: ir directo al selector
+    $('fInput').click();
+  }
+}
+
+function loadFile(e){
+  const file=e.target.files[0];if(!file)return;
+  showLoad('Leyendo "'+file.name+'"...');
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const wb  = XLSX.read(ev.target.result,{type:'array'});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      // Detectar fila de cabeceras (busca "encargado comercial" o "cliente")
+      let hdrRow=-1;
+      for(let i=0;i<Math.min(20,raw.length);i++){
+        const r=raw[i].map(v=>String(v).trim().toLowerCase());
+        if(r.some(v=>v.includes('encargado comercial')||v==='cliente')){hdrRow=i;break}
+      }
+      if(hdrRow<0){hideLoad();toast('No se encontro la fila de encabezados. Verifica que sea la Planilla Horas por Cliente.');return}
+
+      // Indices fijos del formato "Planilla Horas por Cliente"
+      // Col 0=Encargado  Col 3=Cliente  Col 6=Asunto  Col 7=Horas  Col 8=Valor
+      // Col 9=Forma      Col 12=Area    Col 15=Periodo (Trabajo mes)
+      const C_SOC=0,C_CLI=3,C_ASU=6,C_HRS=7,C_VAL=8,C_FOR=9,C_ARE=12,C_PER=15;
+
+      const newData=[];
+      let curSocio='',curCliente='',nid=1;
+
+      for(let j=hdrRow+1;j<raw.length;j++){
+        const r=raw[j];
+        const asunto=String(r[C_ASU]||'').trim().replace(/\x96/g,'-').replace(/\u2013/g,'-');
+        if(!asunto) continue; // fila de subtotal — ignorar
+        const socRaw=String(r[C_SOC]||'').trim();
+        const cliRaw=String(r[C_CLI]||'').trim();
+        if(socRaw) curSocio=socRaw;
+        if(cliRaw) curCliente=cliRaw;
+        if(!curCliente) continue;
+        const areaOrig=String(r[C_ARE]||'').trim();
+        const areaN=AREA_MAP_JS[areaOrig];
+        if(areaN===null) continue; // excluir Comercial / Temas Internos
+        const formaO=String(r[C_FOR]||'').trim().toUpperCase();
+        const formaN=FORMA_MAP_JS[formaO]||formaO;
+        const horas=parseFloat(r[C_HRS])||0;
+        const valor=parseFloat(r[C_VAL])||0;
+        newData.push({
+          id:nid++, cliente:curCliente, asunto,
+          socio:SOCIO_MAP[curSocio]||curSocio,
+          forma:formaN, formaOrig:formaO,
+          area:areaN||areaOrig,
+          periodo:String(r[C_PER]||'').trim(),
+          hProd:horas, hFact:horas,
+          montoTB:valor, montoFact:valor,
+          estado:'POR ENVIAR', responsable:'', proyeccion:null,
+          factura:'', fechaFac:'', moneda:'USD', tipoCambio:3.75,
+          comentario:'', isNew:false
+        });
+      }
+
+      if(!newData.length){hideLoad();toast('No se encontraron asuntos validos en la Planilla.');return}
+
+      // Merge con Ops existente — preservar trabajo del equipo
+      const prevOps={};
+      data.forEach(r=>{
+        const k=norm(r.cliente)+'|'+norm(r.asunto);
+        prevOps[k]={estado:r.estado,responsable:r.responsable,proyeccion:r.proyeccion,
+          hFact:r.hFact,montoFact:r.montoFact,factura:r.factura,fechaFac:r.fechaFac,
+          moneda:r.moneda,tipoCambio:r.tipoCambio,comentario:r.comentario};
+      });
+      newData.forEach(r=>{
+        const k=norm(r.cliente)+'|'+norm(r.asunto);
+        const ops=prevOps[k];
+        if(ops){
+          r.estado=ops.estado; r.responsable=ops.responsable; r.proyeccion=ops.proyeccion;
+          r.hFact=ops.hFact; r.montoFact=ops.montoFact; r.factura=ops.factura;
+          r.fechaFac=ops.fechaFac; r.moneda=ops.moneda; r.tipoCambio=ops.tipoCambio;
+          r.comentario=ops.comentario;
+        }
+      });
+
+      data=newData; newId=Math.max(...data.map(r=>r.id))+1;
+      expanded.clear(); refAreas.clear();
+      [...new Set(data.map(r=>r.cliente))].forEach(c=>{
+        respByClient[c]=data.find(r=>r.cliente===c)?.responsable||RESPONSABLES[0];
+      });
+      $('fName').style.display='inline';$('fName').textContent='📄 '+file.name;
+      hideLoad(); markDirty();
+      const nCli=[...new Set(newData.map(r=>r.cliente))].length;
+      const msg='TB cargada: '+newData.length+' asuntos · '+nCli+' clientes.';
+      if($('odUploadMsg')) $('odUploadMsg').textContent=msg+' Sube Preliquidacion_TB.xlsx a OneDrive.';
+      showUploadGuideForTB(file.name);
+      toast(msg);
+      initFilters(); renderAll();
+    } catch(err){hideLoad();toast('Error al leer: '+err.message)}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ══ EXPORT ══════════════════════════════════════════════════════════════════════
+function exportXLS(){
+  const wb=XLSX.utils.book_new();
+  const hdr=['Cliente','Asunto','Área','Forma Liq.','Socio','Período','Hs. Prod.','Hs. Fact.','Monto TB (USD)','Encargo nuevo','Moneda','Tipo Cambio','Monto a facturar','Estado','Responsable','Proyección','Clasificación','N° Factura','Fecha Facturado','Comentario'];
+  const rows=[hdr,...data.map(r=>[r.cliente,r.asunto,r.area,r.forma,r.socio,r.periodo,r.hProd,r.hFact,r.montoTB,r.isNew?'Sí':'No',r.moneda||'USD',r.moneda==='PEN'?r.tipoCambio:'',r.montoFact,r.estado,r.responsable,(r.proyeccion===true?'Sí':r.proyeccion===false?'No':'Pendiente'),classif(r),r.factura,r.fechaFac||'',r.comentario])];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[20,30,14,12,14,9,6,6,12,6,18,12,8,14,13,10,18].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Preliquidación');
+  const d=new Date();
+  XLSX.writeFile(wb,`Preliquidacion_VyT_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.xlsx`);
+  toast('Exportado');
+}
+
+// ══ ONEDRIVE — DOS CARPETAS (TB y Ops) ══════════════════════════════════
+// Arquitectura simple sin Azure AD ni Graph API:
+//
+//   OneDrive carpeta compartida "Preliquidacion_VyT":
+//   ├── TB/   → Preliquidacion_TB.xlsx   (responsable del mes lo sube)
+//   └── Ops/  → Preliquidacion_Ops.xlsx  (cada usuario lo sube al guardar)
+//
+// El panel lee ambos links cada 45s, hace merge en memoria y muestra
+// el resultado unificado. La subida sigue siendo manual (arrastrar a
+// OneDrive) pero es un solo archivo por acción y cada usuario sabe
+// qué asuntos le corresponden.
+//
+// CONFIGURACIÓN (Mario TI — 5 minutos):
+//   1. Crear carpeta "Preliquidacion_VyT" en OneDrive compartido
+//   2. Dentro crear subcarpetas "TB" y "Ops"
+//   3. Subir Preliquidacion_TB.xlsx  a la carpeta TB/
+//   4. Subir Preliquidacion_Ops.xlsx a la carpeta Ops/
+//   5. Para cada archivo: clic derecho → Compartir → Cualquiera con el vínculo
+//      → copiar link → agregar ?download=1 al final
+//   6. Enviar los dos links a César para configurarlos en el panel
+// ─────────────────────────────────────────────────────────────────────────
+
+// ── ESTADO ────────────────────────────────────────────────────────────────
+let OD_URL_TB   = localStorage.getItem('vyt_od_tb')  || '';
+let OD_URL_OPS  = localStorage.getItem('vyt_od_ops') || '';
+let lastHashTB  = '';
+let lastHashOps = '';
+let syncRetries = 0;
+const MAX_RETRIES = 3;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+async function fetchODFile(url){
+  if(!url) return null;
+  try{
+    // Cache-buster — usar & porque SharePoint URLs ya tienen parámetros
+    const sep  = url.includes('?') ? '&' : '?';
+    const full = url + sep + '_t=' + Date.now();
+    const res  = await fetch(full, {cache:'no-store'});
+    if(!res.ok){
+      const msg = 'Error ' + res.status + ' al leer desde OneDrive.';
+      console.warn(msg, full);
+      // Mostrar error específico al usuario solo en primer intento
+      if(syncRetries === 0) toast('⚠ ' + msg + ' Verifica que el link permita acceso público.');
+      return null;
+    }
+    const ct = res.headers.get('content-type') || '';
+    if(ct.includes('text/html')){
+      // SharePoint redirigió a página de login — link requiere autenticación
+      toast('⚠ El link de OneDrive requiere inicio de sesión. Usa "Cualquiera con el vínculo puede ver".');
+      console.warn('SharePoint devolvió HTML en vez de Excel — link privado:', full);
+      return null;
+    }
+    return await res.arrayBuffer();
+  } catch(e){
+    console.warn('fetchODFile error:', e.message);
+    return null;
+  }
+}
+
+function quickHash(buf){
+  if(!buf) return '';
+  const a = new Uint8Array(buf);
+  return buf.byteLength + '-' + a[0] + ',' + a[Math.floor(a.length/2)] + ',' + a[a.length-1];
+}
+
+// ── CONECTAR ──────────────────────────────────────────────────────────────
+// Probar si los links de OneDrive son accesibles antes de conectar
+async function testLinks(){
+  const tb  = ($('urlTB')  || {value:''}).value.trim();
+  const ops = ($('urlOps') || {value:''}).value.trim();
+  if(!tb && !ops){ toast('Pega los links primero.'); return; }
+
+  const normUrl = u => {
+    if(!u) return '';
+    if(u.includes('download=1')) return u;
+    const sep = u.includes('?') ? '&' : '?';
+    return u + sep + 'download=1';
+  };
+
+  showLoad('Probando conexión con OneDrive...');
+  let ok = true;
+
+  if(tb){
+    try{
+      const r = await fetch(normUrl(tb) + '&_t=' + Date.now(), {cache:'no-store'});
+      const ct = r.headers.get('content-type') || '';
+      if(!r.ok){
+        toast('⚠ TB — Error ' + r.status + '. Verifica el link.');
+        ok = false;
+      } else if(ct.includes('text/html')){
+        toast('⚠ TB — El link requiere login. Cambia a "Cualquiera con el vínculo puede ver".');
+        ok = false;
+      } else {
+        toast('✓ TB — Link válido (' + Math.round(parseInt(r.headers.get('content-length')||0)/1024) + ' KB)');
+      }
+    } catch(e){ toast('⚠ TB — No se pudo conectar: ' + e.message); ok = false; }
+  }
+
+  if(ops){
+    try{
+      const r = await fetch(normUrl(ops) + '&_t=' + Date.now(), {cache:'no-store'});
+      const ct = r.headers.get('content-type') || '';
+      if(!r.ok){
+        toast('⚠ Ops — Error ' + r.status + '. Verifica el link.');
+        ok = false;
+      } else if(ct.includes('text/html')){
+        toast('⚠ Ops — El link requiere login. Cambia a "Cualquiera con el vínculo puede ver".');
+        ok = false;
+      } else {
+        toast('✓ Ops — Link válido');
+      }
+    } catch(e){ toast('⚠ Ops — No se pudo conectar: ' + e.message); ok = false; }
+  }
+
+  hideLoad();
+  if(ok) toast('✅ Ambos links funcionan. Haz clic en Conectar.');
+}
+
+function connectSheet(){
+  const tb  = ($('urlTB')  || {value:''}).value.trim();
+  const ops = ($('urlOps') || {value:''}).value.trim();
+  if(!tb || !ops){
+    toast('Pega los dos links de OneDrive (TB y Ops) antes de conectar.');
+    return;
+  }
+  // Convertir link compartido de SharePoint/OneDrive a URL de descarga directa
+  // Acepta tanto links /x:/s/ (vista) como /:x:/g/ (descarga)
+  const normUrl = u => {
+    if(!u) return '';
+    // Si ya tiene download=1, usarlo tal cual
+    if(u.includes('download=1')) return u;
+    // Links de SharePoint formato /x:/s/ o /:x:/g/ — agregar &download=1
+    if(u.includes('sharepoint.com') || u.includes('1drv.ms') || u.includes('onedrive.live.com')){
+      const sep = u.includes('?') ? '&' : '?';
+      return u + sep + 'download=1';
+    }
+    // Otros — agregar ?download=1
+    return u.split('?')[0] + '?download=1';
+  };
+  OD_URL_TB  = normUrl(tb);
+  OD_URL_OPS = normUrl(ops);
+  // Limpiar caché anterior y guardar nuevos links
+  localStorage.removeItem('vyt_od_tb');
+  localStorage.removeItem('vyt_od_ops');
+  localStorage.setItem('vyt_od_tb',  OD_URL_TB);
+  localStorage.setItem('vyt_od_ops', OD_URL_OPS);
+  // Resetear hashes para forzar re-lectura completa
+  lastHashTB  = '';
+  lastHashOps = '';
+  data = [];
+  $('setupBanner').classList.add('hidden');
+  if(!CUR_USER) promptUser(true);
+  else initShared();
+}
+
+// ── USUARIO MANUAL ────────────────────────────────────────────────────────
+function setCurUser(name){
+  CUR_USER = name.trim();
+  localStorage.setItem('vyt_usr', CUR_USER);
+  $('hUser').textContent = '👤 ' + CUR_USER;
+}
+
+function promptUser(afterConnect){
+  const modal = $('ovUser');
+  if(modal){
+    // Pre-seleccionar si ya hay nombre guardado
+    const inp = $('userNameInp');
+    if(inp && CUR_USER) inp.value = CUR_USER;
+    modal.classList.add('open');
+    // Guardar si debemos conectar después de confirmar
+    modal._afterConnect = afterConnect;
+  } else {
+    // Fallback sin modal
+    const n = prompt('Tu nombre (Andrea / Fabrissio / Cristina / Katherine / Mayte):', CUR_USER);
+    if(n){ setCurUser(n.trim()); if(afterConnect && OD_URL_TB && OD_URL_OPS) initShared(); }
+  }
+}
+
+function changeUser(){ promptUser(false); }
+
+function confirmUser(){
+  const sel = $('userNameInp'), cus = $('userNameCustom');
+  const name = (cus && cus.value.trim()) || (sel && sel.value.trim());
+  if(!name){ toast('Selecciona o escribe tu nombre.'); return; }
+  setCurUser(name);
+  closeOv('ovUser');
+  if(OD_URL_TB && OD_URL_OPS) initShared();
+  else toast('Nombre guardado: ' + name);
+}
+
+// ── INIT COMPARTIDO ───────────────────────────────────────────────────────
+async function initShared(){
+  SOURCE = 'shared';
+  $('collabPill').classList.add('show');
+  $('hUser').textContent = '👤 ' + CUR_USER;
+  showLoad('Cargando base desde OneDrive…');
+  await fetchSheet();
+  hideLoad();
+  startSync();
+  toast('✅ Conectado · sync cada 45s');
+}
+
+// ── LEER TB + OPS Y HACER MERGE ───────────────────────────────────────────
+async function fetchSheet(){
+  if(!OD_URL_TB && !OD_URL_OPS) return;
+  try{
+    let tbChanged = false, opsChanged = false;
+    let tbBuf = null, opsBuf = null;
+
+    // Leer TB
+    if(OD_URL_TB){
+      tbBuf = await fetchODFile(OD_URL_TB);
+      if(tbBuf){
+        const h = quickHash(tbBuf);
+        tbChanged = (h !== lastHashTB);
+        if(tbChanged) lastHashTB = h;
+      }
+    }
+
+    // Leer Ops
+    if(OD_URL_OPS){
+      opsBuf = await fetchODFile(OD_URL_OPS);
+      if(opsBuf){
+        const h = quickHash(opsBuf);
+        opsChanged = (h !== lastHashOps);
+        if(opsChanged) lastHashOps = h;
+      }
+    }
+
+    // Si no se pudo leer TB mostrar error claro
+    if(!tbBuf && OD_URL_TB){
+      toast('⚠ No se pudo leer la base TB desde OneDrive. Verifica que el link sea correcto y tenga ?download=1');
+      updateSyncStatus('err');
+      return;
+    }
+    // Si nada cambió, no re-renderizar
+    if(!tbChanged && !opsChanged){ syncRetries = 0; return; }
+
+    // Merge y render
+    mergeFiles(
+      tbBuf  ? XLSX.read(tbBuf,  {type:'array'}) : null,
+      opsBuf ? XLSX.read(opsBuf, {type:'array'}) : null
+    );
+    syncRetries = 0;
+    updateSyncStatus('ok', tbChanged, opsChanged);
+    renderAll();
+
+  } catch(e){
+    syncRetries++;
+    updateSyncStatus('err');
+    if(syncRetries <= MAX_RETRIES)
+      toast('⚠ Error sync (' + syncRetries + '/' + MAX_RETRIES + '): ' + e.message);
+    else
+      toast('⚠ Sin conexión a OneDrive. Trabajando en modo local.');
+  }
+}
+
+// ── SYNC AUTOMÁTICO ───────────────────────────────────────────────────────
+function startSync(){
+  if(syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(() => fetchSheet(), 45000);
+}
+
+// ── ESTADO SYNC EN PANTALLA ───────────────────────────────────────────────
+function updateSyncStatus(status, tbChanged, opsChanged){
+  const pill    = $('collabPill');
+  const timeStr = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  if(status === 'ok'){
+    const what = tbChanged && opsChanged ? 'TB + Ops'
+               : tbChanged  ? 'TB actualizado'
+               : opsChanged ? 'Ops actualizado' : '';
+    if(pill){
+      pill.style.background = '';
+      pill.style.color      = '';
+      pill.textContent = '● OneDrive · ' + timeStr;
+    }
+    const st = $('syncStatus'), st2 = $('syncTime');
+    if(st)  st.style.display = 'inline';
+    if(st2) st2.textContent  = timeStr;
+    if(what) toast('🔄 ' + what);
+  } else {
+    if(pill){
+      pill.style.background = '#FAEEDA';
+      pill.style.color      = '#854F0B';
+      pill.textContent = '⚠ Sin conexión';
+    }
+  }
+}
+
+// ── POSTSHEET (stub) ──────────────────────────────────────────────────────
+async function postSheet(body){
+  if(body && body.action === 'add_encargo') markDirty();
+}
+
+
+function mergeFiles(tbWb, opsWb){
+  // Si no hay TB, no hay nada que mostrar
+  if(!tbWb){ toast('⚠ Sin base TB disponible.'); return; }
+
+  // ── Leer TB ──────────────────────────────────────────────────────────
+  // Acepta tanto la "Planilla Horas por Cliente" (hoja Reportes)
+  // como el TB.xlsx generado por el panel (hoja TB)
+  const tbSheetName = tbWb.SheetNames.find(n =>
+    n.toLowerCase().includes('tb') ||
+    n.toLowerCase().includes('reporte') ||
+    n.toLowerCase().includes('planilla') ||
+    n.toLowerCase().includes('horas')
+  ) || tbWb.SheetNames[0];
+  const tbSheet = tbWb.Sheets[tbSheetName];
+
+  // Detectar formato: ¿es la Planilla original o el TB.xlsx del panel?
+  const tbRowsRaw = XLSX.utils.sheet_to_json(tbSheet, {header:1, defval:''});
+  const isPlanilla = tbRowsRaw.slice(0,8).some(r =>
+    r.some(v => String(v).toLowerCase().includes('encargado comercial'))
+  );
+
+  let tbRows;
+  if(isPlanilla){
+    // ── Formato Planilla Horas por Cliente ──────────────────────────────
+    // Col 0=Socio Col 3=Cliente Col 6=Asunto Col 7=Horas Col 8=Valor
+    // Col 9=Forma Col 12=Area   Col 15=Periodo
+    const C_SOC=0,C_CLI=3,C_ASU=6,C_HRS=7,C_VAL=8,C_FOR=9,C_ARE=12,C_PER=15;
+    let hdrRow=-1;
+    for(let i=0;i<Math.min(20,tbRowsRaw.length);i++){
+      const r=tbRowsRaw[i].map(v=>String(v).toLowerCase().trim());
+      if(r.some(v=>v.includes('encargado comercial')||v==='cliente')){hdrRow=i;break}
+    }
+    const dataRows = hdrRow>=0 ? tbRowsRaw.slice(hdrRow+1) : tbRowsRaw;
+    let curSocio='', curCliente='';
+    tbRows = [];
+    dataRows.forEach(r=>{
+      const asunto=String(r[C_ASU]||'').trim().replace(//g,'-').replace(/–/g,'-');
+      if(!asunto) return;
+      const socRaw=String(r[C_SOC]||'').trim();
+      const cliRaw=String(r[C_CLI]||'').trim();
+      if(socRaw) curSocio=socRaw;
+      if(cliRaw) curCliente=cliRaw;
+      if(!curCliente) return;
+      const areaOrig=String(r[C_ARE]||'').trim();
+      const areaN=AREA_MAP_JS[areaOrig];
+      if(areaN===null) return;
+      const formaO=String(r[C_FOR]||'').trim().toUpperCase();
+      tbRows.push({
+        cliente:curCliente, asunto,
+        socio:SOCIO_MAP[curSocio]||curSocio,
+        forma:FORMA_MAP_JS[formaO]||formaO, formaOrig:formaO,
+        area:areaN||areaOrig,
+        periodo:String(r[C_PER]||'').trim(),
+        horas:parseFloat(r[C_HRS])||0,
+        montoUSD:parseFloat(r[C_VAL])||0,
+      });
+    });
+  } else {
+    // ── Formato TB.xlsx generado por el panel (hoja TB con columnas nombradas)
+    tbRows = XLSX.utils.sheet_to_json(tbSheet, {defval:''});
+  }
+
+  // ── Leer Ops (puede no existir aún en primera carga) ─────────────────
+  const opsMap = new Map();
+  if(opsWb){
+    const opsSheet = opsWb.Sheets['Ops'] || opsWb.Sheets[opsWb.SheetNames[0]];
+    if(opsSheet){
+      XLSX.utils.sheet_to_json(opsSheet, {defval:''}).forEach(r => {
+        // Llave por cliente+asunto (más robusto que ID entre archivos distintos)
+        const k = norm(r.cliente||'') + '|' + norm(r.asunto||'');
+        if(k!=='|') opsMap.set(k, r);
+      });
+    }
+  }
+
+  // Construir data mergeando TB + Ops
+  const newData = [];
+  tbRows.forEach((r, i) => {
+    // Detectar columnas TB (flexible)
+    // Los campos ya están normalizados (sea Planilla o TB.xlsx)
+    const idVal   = r.id || r.ID || (i+1);
+    const cliente = String(r.cliente || r.Cliente || r['CLIENTE'] || '').trim();
+    const asunto  = String(r.asunto  || r.Asunto  || r['ASUNTO']  || '').trim();
+    if(!cliente || !asunto) return;
+
+    // área y forma ya normalizadas en Planilla; para TB.xlsx aplicar mapeos
+    const areaOrig = String(r.area || r.Area || r['ÁREA'] || r['area'] || '').trim();
+    const areaN    = AREA_MAP_JS.hasOwnProperty(areaOrig)
+      ? AREA_MAP_JS[areaOrig]
+      : (areaOrig || null);
+    if(areaN === null) return;
+
+    const formaO  = String(r.forma || r.Forma || r['FORMA'] || r.formaOrig || '').trim().toUpperCase();
+    const formaN  = r.forma || FORMA_MAP_JS[formaO] || formaO;
+    const socioK  = String(r.socio || r.Socio || r['SOCIO'] || '').trim();
+    const hProd   = parseFloat(r.horas || r.Horas || r['HORAS'] || r.hProd || 0) || 0;
+    const mTB     = parseFloat(r.montoUSD || r.monto || r['MONTO'] || r.montoTB || 0) || 0;
+
+    // Ops guardados — llave cliente+asunto (más robusto que ID entre archivos distintos)
+    const opsKey = norm(cliente) + '|' + norm(String(r.asunto || r.Asunto || r['ASUNTO'] || '').trim());
+    const ops = opsMap.get(opsKey) || {};
+
+    newData.push({
+      id          : +idVal,
+      cliente, asunto,
+      socio       : SOCIO_MAP[socioK] || socioK,
+      forma       : formaN,
+      formaOrig   : formaO,
+      area        : areaN,
+      periodo     : String(r.periodo || r.Periodo || r['PERÍODO'] || '').trim(),
+      hProd,
+      hFact       : parseFloat(ops.hFact) || hProd,
+      montoTB     : mTB,
+      montoFact   : parseFloat(ops.montoFact) || mTB,
+      estado      : ops.estado      || 'POR ENVIAR',
+      responsable : ops.responsable || '',
+      proyeccion  : ops.proy !== undefined ? (ops.proy === 'SI' || ops.proy === true) : null,
+      fechaFac    : ops.fechaFac    || '',
+      moneda      : ops.moneda      || 'USD',
+      tipoCambio  : parseFloat(ops.tipoCambio) || 3.75,
+      factura     : ops.nfactura    || '',
+      comentario  : ops.comentario  || '',
+      isNew       : false,
+    });
+  });
+
+  // ── Encargos nuevos del equipo (no están en TB) ─────────────────────
+  data.filter(r => r.isNew).forEach(r => {
+    const k = norm(r.cliente) + '|' + norm(r.asunto);
+    if(!newData.find(x => norm(x.cliente)+'|'+norm(x.asunto) === k)) newData.push(r);
+  });
+
+  // ── Asuntos que estaban en la base pero ya no vienen en TB ────────────
+  // Se marcan con sinMovTB=true pero NO se eliminan
+  data.filter(r => !r.isNew).forEach(r => {
+    const k = norm(r.cliente) + '|' + norm(r.asunto);
+    const enNueva = newData.find(x => norm(x.cliente)+'|'+norm(x.asunto) === k);
+    if(!enNueva){
+      newData.push({...r, sinMovTB:true});
+    }
+  });
+
+  if(newData.length) {
+    data    = newData;
+    newId   = Math.max(...data.map(r => r.id)) + 1;
+    [...new Set(data.map(r => r.cliente))].forEach(c => {
+      respByClient[c] = data.find(r => r.cliente === c)?.responsable || RESPONSABLES[0];
+    });
+    initFilters();
+  }
+}
+
+// ── GUARDAR ESTADO EN EXCEL Y SUBIR A ONEDRIVE ────────────────────────────
+// En la etapa de pruebas sin Azure AD, el flujo es:
+//   1. El panel genera el Excel actualizado con hoja TB + Ops + Log
+//   2. Descarga automáticamente el archivo con nombre fijo
+//   3. El usuario lo sube manualmente a la carpeta de OneDrive compartida
+//      (reemplaza el archivo existente)
+// Esto garantiza que todos los miembros vean la versión más reciente
+// en el próximo ciclo de sync (45s).
+// ─────────────────────────────────────────────────────────────────────────
+async function saveChanges(){
+  showLoad('Guardando cambios del equipo (Ops)…');
+  try{
+    const wb = XLSX.utils.book_new();
+    // ── saveChanges solo genera Preliquidacion_Ops.xlsx ──────────────────
+    // TB nunca se modifica desde aquí — es responsabilidad del responsable del mes
+    // ── Hoja TB (espejo de referencia, no editable) ───────────────────────
+    const tbHdr = ['id','cliente','asunto','socio','forma','formaOrig','area',
+                   'periodo','horas','montoUSD'];
+    const tbRows = data.map(r => [r.id,r.cliente,r.asunto,r.socio,r.forma,
+                   r.formaOrig,r.area,r.periodo,r.hProd,r.montoTB]);
+    const wsTB = XLSX.utils.aoa_to_sheet([tbHdr, ...tbRows]);
+    wsTB['!cols'] = [5,28,32,14,10,10,16,8,7,10].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb, wsTB, 'TB');
+
+    // ── Hoja Ops (campos operativos) ──────────────────────────────────────
+    const opsHdr = ['cliente','asunto','estado','responsable','proy','montoFact','hFact',
+                    'moneda','tipoCambio','nfactura','fechaFac','comentario','usuario','timestamp'];
+    const opsRows = data.map(r => [
+      r.id, r.estado, r.responsable,
+      (r.proyeccion===true?'SI':r.proyeccion===false?'NO':''),
+      r.montoFact, r.hFact, r.factura, r.comentario,
+      CUR_USER, new Date().toISOString()
+    ]);
+    const wsOps = XLSX.utils.aoa_to_sheet([opsHdr, ...opsRows]);
+    wsOps['!cols'] = [5,18,12,5,12,7,10,22,12,20].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb, wsOps, 'Ops');
+
+    // ── Hoja Log (append de este guardado) ────────────────────────────────
+    const logHdr = ['timestamp','usuario','accion','registros','notas'];
+    const logRow  = [
+      new Date().toISOString(), CUR_USER, 'SAVE_ALL',
+      data.length,
+      `Guardado desde panel v2.0 · ${data.filter(r=>r.isNew).length} encargos nuevos`
+    ];
+    const wsLog = XLSX.utils.aoa_to_sheet([logHdr, logRow]);
+    wsLog['!cols'] = [20,12,10,9,40].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb, wsLog, 'Log');
+
+    // ── Hoja Resumen (para que Mario/directorio vean sin abrir el panel) ──
+    const resHdr = ['Cliente','Asunto','Área','Forma','Socio','Período',
+                    'Hs.Prod','Hs.Fact','Monto TB','Monto Fact.',
+                    'Estado','Responsable','Proyección','Clasificación',
+                    'N° Factura','Comentario','Encargo nuevo'];
+    const resRows = data.map(r => [
+      r.cliente, r.asunto, r.area, r.forma, r.socio, r.periodo,
+      r.hProd, r.hFact, r.montoTB, r.montoFact,
+      r.estado, r.responsable, (r.proyeccion===true?'Sí':r.proyeccion===false?'No':'Pendiente'), classif(r),
+      r.factura, r.comentario, r.isNew?'Sí':'No'
+    ]);
+    const wsRes = XLSX.utils.aoa_to_sheet([resHdr, ...resRows]);
+    wsRes['!cols'] = [28,32,14,10,14,8,7,7,11,11,18,12,8,13,10,22,6].map(w=>({wch:w}));
+    // Congelar fila de encabezado
+    wsRes['!freeze'] = {xSplit:0, ySplit:1};
+    XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen');
+
+    hideLoad();
+    // Descargar Ops.xlsx — el usuario lo sube a la carpeta Ops/ en OneDrive
+    XLSX.writeFile(wb, 'Preliquidacion_Ops.xlsx');
+    $('dirty').classList.remove('show');
+    showUploadGuide();
+  } catch(err){
+    hideLoad();
+    toast('Error al generar el Excel: ' + err.message);
+  }
+}
+
+// ── GUÍA DE SUBIDA A ONEDRIVE ─────────────────────────────────────────────
+async function saveTBFile(){
+  // Genera Preliquidacion_TB.xlsx con los datos de Time Billing cargados
+  // Solo contiene datos TB — sin campos operativos del equipo
+  try{
+    const wb = XLSX.utils.book_new();
+    const tbHdr = ['id','cliente','asunto','socio','forma','formaOrig','area','periodo','horas','montoUSD'];
+    const tbRows = data.map(r => [r.id,r.cliente,r.asunto,r.socio,r.forma,r.formaOrig,r.area,r.periodo,r.hProd,r.montoTB]);
+    const wsTB = XLSX.utils.aoa_to_sheet([tbHdr,...tbRows]);
+    wsTB['!cols'] = [5,28,32,14,10,10,16,8,8,10].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb, wsTB, 'TB');
+    // Hoja Log
+    const wsLog = XLSX.utils.aoa_to_sheet([
+      ['timestamp','usuario','accion','registros'],
+      [new Date().toISOString(), CUR_USER, 'CARGA_TB', data.length]
+    ]);
+    XLSX.utils.book_append_sheet(wb, wsLog, 'Log');
+    // Descargar TB.xlsx — el responsable lo sube a la carpeta TB/ en OneDrive
+    XLSX.writeFile(wb, 'Preliquidacion_TB.xlsx');
+    toast('✅ Preliquidacion_TB.xlsx descargada — súbela a la carpeta TB/ en OneDrive.');
+  } catch(e){ toast('Error al generar TB: '+e.message); }
+}
+
+function showUploadGuideForTB(fileName){
+  // Modal OneDrive pero con mensaje específico para carga TB
+  const ov = $('ovUpload');
+  if(ov){
+    // Actualizar subtítulo del modal para contexto TB
+    const sub = ov.querySelector('.modal-sub');
+    if(sub) sub.innerHTML = 'El archivo <strong>Preliquidacion_TB.xlsx</strong> se descargó. Súbelo a la carpeta <strong>Preliquidacion_VyT/TB/</strong> en OneDrive — en 45s todo el equipo verá la base actualizada.';
+    ov.classList.add('open');
+    // Disparar la generación del Excel automáticamente
+    setTimeout(()=>saveTBFile(), 300);
+  }
+}
+
+function showUploadGuide(){
+  const ov = document.getElementById('ovUpload');
+  if(ov) { ov.classList.add('open'); return; }
+  toast('✓ Excel descargado. Súbelo a la carpeta compartida en OneDrive para sincronizar con el equipo.');
+}
+
+// ── STATUS INDICADOR DE SYNC ──────────────────────────────────────────────
+function updateSyncStatus(status, tbChanged, opsChanged){
+  const pill = $('collabPill');
+  const timeStr = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  if(status === 'ok'){
+    let what = '';
+    if(tbChanged && opsChanged) what = 'TB + Ops';
+    else if(tbChanged)          what = 'TB';
+    else if(opsChanged)         what = 'Ops';
+    const label = what ? `● OneDrive · ${what} · ${timeStr}` : `● OneDrive · ${timeStr}`;
+    if(pill){ pill.style.background=''; pill.style.color=''; pill.textContent=label; }
+    const st=$('syncStatus'), stime=$('syncTime');
+    if(st) st.style.display='inline';
+    if(stime) stime.textContent = timeStr;
+    if(what) toast(`🔄 Sync: ${what} actualizado`);
+  } else {
+    if(pill){ pill.style.background='#FAEEDA'; pill.style.color='#854F0B'; pill.textContent='⚠ Sin conexión OneDrive'; }
+  }
+}
+
+// ── SYNC AUTOMÁTICO ───────────────────────────────────────────────────────
+function startSync(){
+  if(syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(async () => {
+    await fetchSheet();
+  }, 45000); // cada 45 segundos
+}
+
+// ── POSTSHEET (stub — no aplica en OneDrive manual) ───────────────────────
+async function postSheet(body){
+  // Con Graph API la escritura es directa en saveChanges/saveTBFile.
+  // Este stub preserva llamadas existentes en el código.
+  if(body && body.action === 'add_encargo') markDirty();
+}
+
+// ══ GUARDAR / RESTABLECER ═══════════════════════════════════════════════════════
+async function saveChanges(){
+  if(SOURCE==='shared'){
+    showLoad('Guardando en base compartida…');
+    await postSheet({action:'save_all',data:data.map(r=>({id:r.id,estado:r.estado,responsable:r.responsable,proy:(r.proyeccion===true?'SI':r.proyeccion===false?'NO':''),montoFact:r.montoFact,hFact:r.hFact,nfactura:r.factura,comentario:r.comentario}))});
+    hideLoad();
+  }
+  $('dirty').classList.remove('show');toast('Cambios guardados');
+}
+function resetData(){
+  const msg = SOURCE==='shared'
+    ? '¿Restablecer al estado inicial?\n\nEsto descartará los cambios locales no guardados. Los datos en OneDrive no se modificarán hasta que guardes.'
+    : '¿Restablecer al estado inicial de la base cargada?';
+  if(!confirm(msg))return;
+  data=TB_RAW.map(r=>({id:r[0],cliente:r[1],asunto:r[2],socio:r[3],forma:r[4],formaOrig:r[5],area:r[6],periodo:r[7],hProd:r[8],hFact:r[8],montoTB:r[9],montoFact:r[9],estado:'POR ENVIAR',responsable:'',proyeccion:null,factura:'',fechaFac:'',moneda:'USD',tipoCambio:3.75,comentario:'',isNew:false}));
+  expanded.clear();refAreas.clear();$('dirty').classList.remove('show');clearFilters();toast('Panel restablecido.');
+}
+
+// ══ EVENT LISTENERS ══════════════════════════════════════════════════════════════
+$('tBody').addEventListener('click',e=>{const b=e.target.closest('[data-xk]');if(!b)return;const k=b.dataset.xk;expanded.has(k)?expanded.delete(k):expanded.add(k);renderTable()});
+$('tBody').addEventListener('change',e=>{
+  const hfid=e.target.dataset.hfid;if(hfid){setMatterHFact(hfid,e.target.value);return}
+  const hfk=e.target.dataset.hfk;if(hfk){setGroupHFact(hfk,e.target.value);return}
+  const amt=e.target.dataset.amt;if(amt){setGroupAmount(amt,e.target.value);return}
+  const inv=e.target.dataset.inv;if(inv){setInvoice(inv,e.target.value);return}
+  const cmt=e.target.dataset.cmt;if(cmt){setComment(cmt,e.target.value);return}
+  const f=e.target.dataset.f,k=e.target.dataset.k;if(f&&k)setGroupField(k,f,e.target.value);
+});
+$('globalSearch').addEventListener('input',renderAll);
+$('portalDate').addEventListener('change',()=>{renderAll();updateAgeNote()});
+$('nClient').addEventListener('input',validateNClient);$('nClient').addEventListener('change',validateNClient);
+$('nMatter').addEventListener('input',validateNMatter);$('nMatter').addEventListener('change',validateNMatter);
+$('nPeriod').addEventListener('change',updateAgeNote);
+document.addEventListener('click',()=>document.querySelectorAll('.multi-menu.open').forEach(x=>x.classList.remove('open')));
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+// ══ INIT ══════════════════════════════════════════════════════════════════════
+function initFilters(){
+  initMulti('mPer','periodo','Período',uniq(data,'periodo').sort());
+  initMulti('mSoc','socio','Socio',uniq(data,'socio').sort((a,b)=>a.localeCompare(b,'es')));
+  initMulti('mAre','area','Área',AREAS);
+  initMulti('mFor','forma','Forma',FORMAS);
+  initMulti('mEst','estado','Estado',ESTADOS);
+}
+
+// Fecha del portal: hoy por defecto
+const today=new Date();
+$('portalDate').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+
+if(CUR_USER)$('hUser').textContent='👤 '+CUR_USER;
+// ── Recuperar links OneDrive desde localStorage ──────────────────────────
+OD_URL_TB  = localStorage.getItem('vyt_od_tb')  || '';
+OD_URL_OPS = localStorage.getItem('vyt_od_ops') || '';
+if(OD_URL_TB  && $('urlTB'))  $('urlTB').value  = OD_URL_TB;
+if(OD_URL_OPS && $('urlOps')) $('urlOps').value = OD_URL_OPS;
+
+// Siempre mostrar el banner al abrir — el equipo confirma o ajusta los links
+$('setupBanner').classList.remove('hidden');
+if(!CUR_USER) setTimeout(() => promptUser(false), 600);
+// Si ya hay links guardados, pre-llenar los campos pero esperar que el usuario pulse Conectar
+
+initFilters();renderAll();
+</script>
+</body>
+</html>
